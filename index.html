@@ -320,6 +320,8 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <script>const {
   useState,
   useEffect,
@@ -519,28 +521,61 @@ const X = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.create
   x2: "18",
   y2: "18"
 }));
-
-/* ------------------------------------------------------------------ */
-/*  Paleta — água de piscina ao amanhecer                              */
-/* ------------------------------------------------------------------ */
-const C = {
-  bg: "#EEF3F4",
+const LIGHT = {
+  bg: "#EDF2F3",
   surface: "#FFFFFF",
+  primary: "#0F3B44",
+  onPrimary: "#FFFFFF",
+  heading: "#0F3B44",
   deep: "#0F3B44",
   teal: "#2C7A7B",
-  tealSoft: "#D7E7E6",
-  amber: "#E0954A",
-  ink: "#16292C",
-  muted: "#5F7376",
+  tealSoft: "#DCEAE9",
+  amber: "#CF8340",
+  amberSoft: "#F6EAD9",
+  ink: "#17292C",
+  muted: "#5F7476",
   line: "#DCE6E6",
-  warn: "#B4552E"
+  input: "#F7FBFB",
+  track: "#E4EDED",
+  warn: "#B4552E",
+  shadow: "0 1px 3px rgba(15,59,68,0.07)"
 };
+const DARK = {
+  bg: "#0E1A1C",
+  surface: "#16272A",
+  primary: "#3E9E96",
+  onPrimary: "#06201E",
+  heading: "#E8F1F0",
+  deep: "#E8F1F0",
+  teal: "#5CB4AB",
+  tealSoft: "#1E393B",
+  amber: "#E0A05A",
+  amberSoft: "#33291B",
+  ink: "#E6F0EF",
+  muted: "#8CA2A3",
+  line: "#243A3D",
+  input: "#10211F",
+  track: "#1A2E31",
+  warn: "#E28A63",
+  shadow: "0 2px 8px rgba(0,0,0,0.35)"
+};
+let C = LIGHT;
+function applyTheme(mode) {
+  C = mode === "dark" ? DARK : LIGHT;
+  try {
+    document.body.style.background = C.bg;
+  } catch (e) {}
+  try {
+    localStorage.setItem("ui:theme", mode);
+  } catch (e) {}
+}
+try {
+  const saved = localStorage.getItem("ui:theme");
+  const sys = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  applyTheme(saved || sys);
+} catch (e) {}
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 const SERIF = "ui-serif, Georgia, 'Times New Roman', serif";
-
-/* ------------------------------------------------------------------ */
-/*  Armazenamento persistente (com fallback em memória)                */
-/* ------------------------------------------------------------------ */
 let sb = null;
 let uid = null;
 let cache = {};
@@ -617,10 +652,6 @@ const store = {
     }
   }
 };
-
-/* ------------------------------------------------------------------ */
-/*  Datas + imagem                                                     */
-/* ------------------------------------------------------------------ */
 function dayKey(d = new Date()) {
   const y = d.getFullYear(),
     m = String(d.getMonth() + 1).padStart(2, "0"),
@@ -646,7 +677,7 @@ function sleepHours(bed, wake) {
   if (end <= start) end += 24 * 60;
   return Math.round((end - start) / 60 * 10) / 10;
 }
-function readImage(file, maxDim = 1200, quality = 0.72) {
+function readImage(file, maxDim = 1280, quality = 0.72) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -671,16 +702,59 @@ function readImage(file, maxDim = 1200, quality = 0.72) {
     img.src = url;
   });
 }
-function downloadDataUrl(dataURL, filename) {
+function imgSize(dataURL) {
+  return new Promise(res => {
+    const i = new Image();
+    i.onload = () => res({
+      w: i.width,
+      h: i.height
+    });
+    i.onerror = () => res({
+      w: 1,
+      h: 1
+    });
+    i.src = dataURL;
+  });
+}
+function downloadDataUrl(d, n) {
   const a = document.createElement("a");
-  a.href = dataURL;
-  a.download = filename;
+  a.href = d;
+  a.download = n;
   a.click();
 }
-
-/* ------------------------------------------------------------------ */
-/*  Componentes base                                                   */
-/* ------------------------------------------------------------------ */
+const avg = arr => {
+  const v = arr.filter(x => x != null && !isNaN(x));
+  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+};
+const r1 = x => x == null ? "—" : Math.round(x * 10) / 10;
+function Sparkline({
+  values,
+  color,
+  w = 130,
+  h = 34
+}) {
+  const v = values.filter(x => x != null && !isNaN(x));
+  if (v.length < 2) return null;
+  const min = Math.min(...v),
+    max = Math.max(...v),
+    rng = max - min || 1,
+    step = w / (v.length - 1);
+  const pts = v.map((x, i) => `${(i * step).toFixed(1)},${(h - (x - min) / rng * (h - 8) - 4).toFixed(1)}`).join(" ");
+  return /*#__PURE__*/React.createElement("svg", {
+    width: w,
+    height: h,
+    style: {
+      display: "block"
+    }
+  }, /*#__PURE__*/React.createElement("polyline", {
+    points: pts,
+    fill: "none",
+    stroke: color || C.teal,
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }));
+}
 function Scale({
   label,
   value,
@@ -761,7 +835,7 @@ function NumField({
       alignItems: "center",
       border: `1px solid ${C.line}`,
       borderRadius: 12,
-      background: "#FBFDFD"
+      background: C.input
     }
   }, /*#__PURE__*/React.createElement("input", {
     type: "number",
@@ -820,119 +894,9 @@ function TimeField({
       borderRadius: 12,
       padding: "12px 12px",
       fontSize: 16,
-      background: "#FBFDFD",
+      background: C.input,
       color: C.ink,
       fontFamily: FONT
-    }
-  }));
-}
-function ImagePicker({
-  label,
-  hint,
-  dataURL,
-  onPick,
-  onRemove
-}) {
-  const ref = useRef();
-  const handle = async e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = await readImage(file);
-    onPick(url);
-    e.target.value = "";
-  };
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 16
-    }
-  }, /*#__PURE__*/React.createElement("label", {
-    style: {
-      fontSize: 14,
-      color: C.ink,
-      fontWeight: 600,
-      display: "block",
-      marginBottom: 6
-    }
-  }, label), hint && /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 11.5,
-      color: C.muted,
-      margin: "0 0 8px",
-      lineHeight: 1.5
-    }
-  }, hint), dataURL ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      position: "relative",
-      borderRadius: 12,
-      overflow: "hidden",
-      border: `1px solid ${C.line}`
-    }
-  }, /*#__PURE__*/React.createElement("img", {
-    src: dataURL,
-    alt: label,
-    style: {
-      width: "100%",
-      display: "block",
-      maxHeight: 260,
-      objectFit: "contain",
-      background: "#F2F5F6"
-    }
-  }), /*#__PURE__*/React.createElement("button", {
-    onClick: onRemove,
-    style: {
-      position: "absolute",
-      top: 8,
-      right: 8,
-      border: "none",
-      background: "rgba(15,41,44,0.72)",
-      color: "#fff",
-      borderRadius: 20,
-      width: 30,
-      height: 30,
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    }
-  }, /*#__PURE__*/React.createElement(X, {
-    size: 16
-  }))), /*#__PURE__*/React.createElement("button", {
-    onClick: () => ref.current?.click(),
-    style: {
-      marginTop: 8,
-      border: "none",
-      background: "transparent",
-      color: C.teal,
-      fontSize: 13,
-      fontWeight: 600,
-      cursor: "pointer"
-    }
-  }, "Substituir imagem")) : /*#__PURE__*/React.createElement("button", {
-    onClick: () => ref.current?.click(),
-    style: {
-      width: "100%",
-      padding: "16px",
-      borderRadius: 12,
-      border: `1.5px dashed ${C.teal}`,
-      background: C.tealSoft,
-      color: C.deep,
-      fontSize: 14,
-      fontWeight: 600,
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement(Camera, {
-    size: 18
-  }), " Anexar imagem"), /*#__PURE__*/React.createElement("input", {
-    ref: ref,
-    type: "file",
-    accept: "image/*",
-    onChange: handle,
-    style: {
-      display: "none"
     }
   }));
 }
@@ -943,9 +907,9 @@ function Card({
   return /*#__PURE__*/React.createElement("div", {
     style: {
       background: C.surface,
-      borderRadius: 18,
+      borderRadius: 20,
       padding: 20,
-      boxShadow: "0 1px 3px rgba(15,59,68,0.06)",
+      boxShadow: C.shadow,
       border: `1px solid ${C.line}`,
       ...style
     }
@@ -964,13 +928,24 @@ function SectionTitle({
     style: {
       display: "flex",
       alignItems: "center",
-      gap: 8
+      gap: 10
     }
-  }, icon, /*#__PURE__*/React.createElement("h2", {
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      background: C.tealSoft,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0
+    }
+  }, icon), /*#__PURE__*/React.createElement("h2", {
     style: {
       fontFamily: SERIF,
       fontSize: 20,
-      color: C.deep,
+      color: C.heading,
       margin: 0,
       fontWeight: 600
     }
@@ -978,7 +953,7 @@ function SectionTitle({
     style: {
       fontSize: 12.5,
       color: C.muted,
-      margin: "6px 0 0",
+      margin: "8px 0 0",
       lineHeight: 1.5
     }
   }, hint));
@@ -993,12 +968,12 @@ function PrimaryBtn({
     disabled: disabled,
     style: {
       width: "100%",
-      padding: "13px",
+      padding: 13,
       borderRadius: 12,
       border: "none",
       cursor: disabled ? "default" : "pointer",
-      background: disabled ? C.tealSoft : C.deep,
-      color: disabled ? C.muted : "#fff",
+      background: disabled ? C.tealSoft : C.primary,
+      color: disabled ? C.muted : C.onPrimary,
       fontSize: 15,
       fontWeight: 600,
       display: "flex",
@@ -1008,15 +983,174 @@ function PrimaryBtn({
     }
   }, children);
 }
-
-/* ------------------------------------------------------------------ */
-/*  App                                                                */
-/* ------------------------------------------------------------------ */
+function GhostBtn({
+  children,
+  onClick
+}) {
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: onClick,
+    style: {
+      width: "100%",
+      padding: 12,
+      borderRadius: 12,
+      border: `1px solid ${C.primary}`,
+      background: "transparent",
+      color: C.primary,
+      fontSize: 14,
+      fontWeight: 600,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 7
+    }
+  }, children);
+}
+function Empty({
+  children
+}) {
+  return /*#__PURE__*/React.createElement("p", {
+    style: {
+      textAlign: "center",
+      color: C.muted,
+      fontSize: 13.5,
+      padding: "30px 20px",
+      lineHeight: 1.5
+    }
+  }, children);
+}
+function Gallery({
+  prefix,
+  dk,
+  img,
+  label,
+  hint
+}) {
+  const [keys, setKeys] = useState([]);
+  const ref = useRef();
+  const base = prefix + ":" + dk + ":";
+  const refresh = async () => {
+    const ks = (await store.list(base)).sort();
+    setKeys(ks);
+    img.loadImages(ks);
+  };
+  useEffect(() => {
+    refresh();
+  }, [dk]); // eslint-disable-line
+  const add = async files => {
+    for (let i = 0; i < files.length; i++) {
+      const url = await readImage(files[i]);
+      await img.putImage(base + Date.now() + "_" + i, url);
+    }
+    refresh();
+  };
+  const remove = async k => {
+    if (!window.confirm("Apagar esta imagem?")) return;
+    await img.delImage(k);
+    refresh();
+  };
+  const shown = keys.filter(k => img.images[k]);
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 14,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 6
+    }
+  }, label), hint && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11.5,
+      color: C.muted,
+      margin: "0 0 10px",
+      lineHeight: 1.5
+    }
+  }, hint), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "repeat(3, minmax(0,1fr))",
+      gap: 8
+    }
+  }, shown.map(k => /*#__PURE__*/React.createElement("div", {
+    key: k,
+    style: {
+      position: "relative",
+      borderRadius: 12,
+      overflow: "hidden",
+      border: `1px solid ${C.line}`,
+      background: C.input,
+      aspectRatio: "1 / 1"
+    }
+  }, /*#__PURE__*/React.createElement("img", {
+    src: img.images[k],
+    alt: "",
+    style: {
+      width: "100%",
+      height: "100%",
+      objectFit: "cover",
+      display: "block"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => remove(k),
+    style: {
+      position: "absolute",
+      top: 5,
+      right: 5,
+      border: "none",
+      background: "rgba(10,20,22,0.7)",
+      color: "#fff",
+      borderRadius: 16,
+      width: 26,
+      height: 26,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 14
+  })))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => ref.current?.click(),
+    style: {
+      aspectRatio: "1 / 1",
+      borderRadius: 12,
+      border: `1.5px dashed ${C.teal}`,
+      background: C.tealSoft,
+      color: C.teal,
+      cursor: "pointer",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+      fontSize: 11.5,
+      fontWeight: 600
+    }
+  }, /*#__PURE__*/React.createElement(Camera, {
+    size: 20
+  }), " Adicionar")), /*#__PURE__*/React.createElement("input", {
+    ref: ref,
+    type: "file",
+    accept: "image/*",
+    multiple: true,
+    onChange: e => {
+      if (e.target.files?.length) add(e.target.files);
+      e.target.value = "";
+    },
+    style: {
+      display: "none"
+    }
+  }));
+}
 function Tracker() {
   const [tab, setTab] = useState("diario");
   const [days, setDays] = useState({});
   const [strength, setStrength] = useState([]);
-  const [images, setImages] = useState({}); // key -> dataURL
+  const [images, setImages] = useState({});
   const [loaded, setLoaded] = useState(false);
   const [flash, setFlash] = useState("");
   useEffect(() => {
@@ -1040,8 +1174,8 @@ function Tracker() {
     setStrength(next);
     await store.set("log:strength", JSON.stringify(next));
   };
-  const loadImages = async keys => {
-    const missing = keys.filter(k => !(k in images));
+  const loadImages = async ks => {
+    const missing = ks.filter(k => !(k in images));
     if (!missing.length) return;
     const patch = {};
     for (const k of missing) patch[k] = await store.get(k);
@@ -1050,23 +1184,29 @@ function Tracker() {
       ...patch
     }));
   };
-  const putImage = async (key, dataURL) => {
-    await store.set(key, dataURL);
+  const putImage = async (k, d) => {
+    await store.set(k, d);
     setImages(p => ({
       ...p,
-      [key]: dataURL
+      [k]: d
     }));
   };
-  const delImage = async key => {
-    await store.del(key);
+  const delImage = async k => {
+    await store.del(k);
     setImages(p => ({
       ...p,
-      [key]: null
+      [k]: null
     }));
   };
-  const showFlash = msg => {
-    setFlash(msg);
+  const showFlash = m => {
+    setFlash(m);
     setTimeout(() => setFlash(""), 1800);
+  };
+  const imgApi = {
+    images,
+    loadImages,
+    putImage,
+    delImage
   };
   const tabs = [{
     id: "diario",
@@ -1085,12 +1225,6 @@ function Tracker() {
     label: "Relatório",
     icon: FileText
   }];
-  const imgApi = {
-    images,
-    loadImages,
-    putImage,
-    delImage
-  };
   return /*#__PURE__*/React.createElement("div", {
     style: {
       minHeight: "100vh",
@@ -1113,17 +1247,27 @@ function Tracker() {
     style: {
       display: "flex",
       alignItems: "center",
-      gap: 10
+      gap: 12
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 44,
+      height: 44,
+      borderRadius: 13,
+      background: C.tealSoft,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
     }
   }, /*#__PURE__*/React.createElement(Waves, {
-    size: 26,
+    size: 24,
     color: C.teal,
     strokeWidth: 2.2
-  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
     style: {
       fontFamily: SERIF,
       fontSize: 25,
-      color: C.deep,
+      color: C.heading,
       margin: 0,
       fontWeight: 600,
       letterSpacing: -0.3
@@ -1134,25 +1278,11 @@ function Tracker() {
       fontSize: 12.5,
       color: C.muted
     }
-  }, prettyDate(dayKey())))), /*#__PURE__*/React.createElement("svg", {
-    viewBox: "0 0 560 12",
-    width: "100%",
-    height: "12",
-    style: {
-      marginTop: 14,
-      display: "block"
-    },
-    preserveAspectRatio: "none"
-  }, /*#__PURE__*/React.createElement("path", {
-    d: "M0 6 Q 35 0 70 6 T 140 6 T 210 6 T 280 6 T 350 6 T 420 6 T 490 6 T 560 6",
-    fill: "none",
-    stroke: C.tealSoft,
-    strokeWidth: "3"
-  }))), /*#__PURE__*/React.createElement("div", {
+  }, prettyDate(dayKey()))))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 6,
-      background: "#E2ECEC",
+      background: C.track,
       padding: 5,
       borderRadius: 14,
       marginBottom: 18
@@ -1170,14 +1300,14 @@ function Tracker() {
         border: "none",
         cursor: "pointer",
         background: active ? C.surface : "transparent",
-        color: active ? C.deep : C.muted,
+        color: active ? C.heading : C.muted,
         fontWeight: active ? 700 : 500,
         fontSize: 12.5,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         gap: 4,
-        boxShadow: active ? "0 1px 2px rgba(15,59,68,0.1)" : "none"
+        boxShadow: active ? C.shadow : "none"
       }
     }, /*#__PURE__*/React.createElement(Icon, {
       size: 17
@@ -1188,7 +1318,7 @@ function Tracker() {
       textAlign: "center",
       padding: 40
     }
-  }, "A carregar os teus registos\u2026") : /*#__PURE__*/React.createElement(React.Fragment, null, tab === "diario" && /*#__PURE__*/React.createElement(Diario, {
+  }, "A carregar\u2026") : /*#__PURE__*/React.createElement(React.Fragment, null, tab === "diario" && /*#__PURE__*/React.createElement(Diario, {
     days: days,
     saveDays: saveDays,
     flash: showFlash,
@@ -1205,8 +1335,7 @@ function Tracker() {
   }), tab === "relatorio" && /*#__PURE__*/React.createElement(Relatorio, {
     days: days,
     strength: strength,
-    flash: showFlash,
-    img: imgApi
+    flash: showFlash
   })), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 11,
@@ -1221,24 +1350,20 @@ function Tracker() {
       bottom: 22,
       left: "50%",
       transform: "translateX(-50%)",
-      background: C.deep,
-      color: "#fff",
+      background: C.primary,
+      color: C.onPrimary,
       padding: "10px 18px",
       borderRadius: 30,
       fontSize: 13.5,
       display: "flex",
       alignItems: "center",
       gap: 7,
-      boxShadow: "0 4px 14px rgba(15,59,68,0.3)"
+      boxShadow: "0 4px 14px rgba(0,0,0,0.25)"
     }
   }, /*#__PURE__*/React.createElement(Check, {
     size: 15
   }), " ", flash));
 }
-
-/* ------------------------------------------------------------------ */
-/*  DIÁRIO                                                             */
-/* ------------------------------------------------------------------ */
 function Diario({
   days,
   saveDays,
@@ -1251,14 +1376,9 @@ function Diario({
   const today = days[key] || {};
   const existing = mode === "manha" ? today.morning : today.evening;
   const [f, setF] = useState(existing || {});
-  const hrKey = `img:hr:${key}`;
   useEffect(() => {
     setF(existing || {});
   }, [mode]); // eslint-disable-line
-  useEffect(() => {
-    img.loadImages([hrKey]);
-  }, [key]); // eslint-disable-line
-
   const set = (k, v) => setF(p => ({
     ...p,
     [k]: v
@@ -1273,17 +1393,30 @@ function Diario({
       ...f,
       at: new Date().toISOString()
     };
-    const next = {
+    saveDays({
       ...days,
       [key]: {
         ...today,
         [mode === "manha" ? "morning" : "evening"]: payload
       }
-    };
-    saveDays(next);
+    });
     flash(mode === "manha" ? "Manhã registada" : "Tarde registada");
   };
-  const recent = Object.keys(days).sort().reverse().slice(0, 5);
+  const delDay = async k => {
+    if (!window.confirm("Apagar o registo de " + prettyDate(k) + "?")) return;
+    for (const p of ["img:hr", "img:fisico"]) {
+      const ks = await store.list(p + ":" + k + ":");
+      for (const ik of ks) await img.delImage(ik);
+    }
+    const next = {
+      ...days
+    };
+    delete next[k];
+    saveDays(next);
+    flash("Registo apagado");
+  };
+  const recent = Object.keys(days).sort().reverse().slice(0, 7);
+  const sleepSeries = recent.slice().reverse().map(k => days[k]?.morning?.sono);
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -1305,7 +1438,7 @@ function Diario({
       size: 18,
       color: C.teal
     }),
-    hint: "Como acordaste hoje. Anexa o print dos batimentos do teu sensor da noite."
+    hint: "Como acordaste hoje. Anexa o(s) print(s) dos batimentos do teu sensor da noite."
   }, "Ao acordar"), /*#__PURE__*/React.createElement("label", {
     style: {
       fontSize: 14,
@@ -1343,12 +1476,12 @@ function Diario({
     onChange: v => set("qualidadeSono", v),
     lowLabel: "p\xE9ssima",
     highLabel: "\xF3tima"
-  }), /*#__PURE__*/React.createElement(ImagePicker, {
-    label: "Print dos batimentos (noite)",
-    hint: "Captura do teu sensor/app com o gr\xE1fico de FC da noite \u2014 eu leio-o no relat\xF3rio.",
-    dataURL: img.images[hrKey],
-    onPick: u => img.putImage(hrKey, u),
-    onRemove: () => img.delImage(hrKey)
+  }), /*#__PURE__*/React.createElement(Gallery, {
+    prefix: "img:hr",
+    dk: key,
+    img: img,
+    label: "Prints dos batimentos (noite)",
+    hint: "Podes juntar mais do que um. V\xE3o aparecer no relat\xF3rio deste dia."
   }), /*#__PURE__*/React.createElement(NumField, {
     label: "FC de repouso m\xE9dia \u2014 opcional",
     value: f.fcRepouso,
@@ -1421,7 +1554,7 @@ function Diario({
     onChange: v => set("energiaTarde", v),
     lowLabel: "esgotado",
     highLabel: "cheio"
-  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+  }), /*#__PURE__*/React.createElement("label", {
     style: {
       fontSize: 14,
       color: C.ink,
@@ -1442,11 +1575,11 @@ function Diario({
       fontSize: 15,
       fontFamily: FONT,
       resize: "vertical",
-      background: "#FBFDFD",
+      background: C.input,
       color: C.ink,
       boxSizing: "border-box"
     }
-  }))), /*#__PURE__*/React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 16
     }
@@ -1454,36 +1587,45 @@ function Diario({
     onClick: save
   }, /*#__PURE__*/React.createElement(Check, {
     size: 17
-  }), " Guardar ", mode === "manha" ? "manhã" : "tarde"))), recent.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }), " Guardar ", mode === "manha" ? "manhã" : "tarde"))), recent.length > 0 && /*#__PURE__*/React.createElement(Card, {
     style: {
       marginTop: 18
     }
-  }, /*#__PURE__*/React.createElement("p", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 13,
-      color: C.muted,
-      fontWeight: 600,
-      margin: "0 0 8px 4px"
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12
     }
-  }, "\xDAltimos dias"), recent.map(k => {
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13.5,
+      color: C.ink,
+      fontWeight: 700
+    }
+  }, "\xDAltimos dias"), sleepSeries.filter(x => x != null).length > 1 && /*#__PURE__*/React.createElement(Sparkline, {
+    values: sleepSeries,
+    color: C.teal,
+    w: 110,
+    h: 30
+  })), recent.map(k => {
     const m = days[k]?.morning || {};
     return /*#__PURE__*/React.createElement("div", {
       key: k,
       style: {
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
-        background: C.surface,
-        border: `1px solid ${C.line}`,
-        borderRadius: 12,
-        padding: "10px 14px",
-        marginBottom: 8
+        gap: 10,
+        padding: "9px 0",
+        borderTop: `1px solid ${C.line}`
       }
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: 13.5,
         color: C.ink,
-        fontWeight: 600
+        fontWeight: 600,
+        flex: 1
       }
     }, prettyDate(k)), /*#__PURE__*/React.createElement("span", {
       style: {
@@ -1491,13 +1633,20 @@ function Diario({
         color: C.muted,
         fontVariantNumeric: "tabular-nums"
       }
-    }, m.sono != null ? `${m.sono}h sono` : "—"));
+    }, m.sono != null ? `${m.sono}h` : "—"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => delDay(k),
+      style: {
+        border: "none",
+        background: "transparent",
+        color: C.muted,
+        cursor: "pointer",
+        display: "flex"
+      }
+    }, /*#__PURE__*/React.createElement(Trash2, {
+      size: 15
+    })));
   })));
 }
-
-/* ------------------------------------------------------------------ */
-/*  FORÇA — layout reformulado                                         */
-/* ------------------------------------------------------------------ */
 const EXERCICIOS = ["Supino", "Agachamento", "Peso morto", "Remada", "Puxada", "Desenvolvimento ombros", "Elevações", "Prensa de pernas", "Rosca bíceps", "Core / prancha"];
 function MiniNum({
   label,
@@ -1533,7 +1682,7 @@ function MiniNum({
       padding: "12px 6px",
       fontSize: 17,
       textAlign: "center",
-      background: "#FBFDFD",
+      background: C.input,
       color: C.ink,
       fontVariantNumeric: "tabular-nums",
       fontWeight: 600
@@ -1551,21 +1700,23 @@ function Forca({
   const [series, setSeries] = useState(null);
   const add = () => {
     if (!ex || peso == null) return;
-    const next = [{
+    saveStrength([{
       id: Date.now(),
       date: dayKey(),
       ex: ex.trim(),
       peso,
       reps,
       series
-    }, ...strength];
-    saveStrength(next);
+    }, ...strength]);
     setPeso(null);
     setReps(null);
     setSeries(null);
     flash("Série registada");
   };
-  const del = id => saveStrength(strength.filter(s => s.id !== id));
+  const del = id => {
+    if (!window.confirm("Apagar esta série?")) return;
+    saveStrength(strength.filter(s => s.id !== id));
+  };
   const byEx = useMemo(() => {
     const g = {};
     strength.forEach(s => {
@@ -1603,7 +1754,7 @@ function Forca({
       borderRadius: 12,
       padding: "12px 14px",
       fontSize: 16,
-      background: "#FBFDFD",
+      background: C.input,
       color: C.ink
     }
   }), /*#__PURE__*/React.createElement("datalist", {
@@ -1615,8 +1766,7 @@ function Forca({
     style: {
       display: "grid",
       gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-      gap: 10,
-      marginBottom: 8
+      gap: 10
     }
   }, /*#__PURE__*/React.createElement(MiniNum, {
     label: "Peso (kg)",
@@ -1661,7 +1811,7 @@ function Forca({
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: 15.5,
-        color: C.deep,
+        color: C.heading,
         fontWeight: 700
       }
     }, name), /*#__PURE__*/React.createElement("span", {
@@ -1672,7 +1822,7 @@ function Forca({
         display: "flex",
         alignItems: "center",
         gap: 4,
-        background: "#FBF1E4",
+        background: C.amberSoft,
         padding: "4px 9px",
         borderRadius: 20
       }
@@ -1727,10 +1877,6 @@ function Forca({
     })))));
   }));
 }
-
-/* ------------------------------------------------------------------ */
-/*  FÍSICO                                                             */
-/* ------------------------------------------------------------------ */
 function Fisico({
   days,
   saveDays,
@@ -1740,37 +1886,46 @@ function Fisico({
   const key = dayKey();
   const today = days[key] || {};
   const [b, setB] = useState(today.body || {});
-  const fotoKey = `img:fisico:${key}`;
   const set = (k, v) => setB(p => ({
     ...p,
     [k]: v
   }));
-  useEffect(() => {
-    img.loadImages([fotoKey]);
-  }, [key]); // eslint-disable-line
-
   const save = () => {
-    const next = {
+    saveDays({
       ...days,
       [key]: {
         ...today,
         body: {
           ...b,
-          foto: !!img.images[fotoKey],
           at: new Date().toISOString()
         }
       }
-    };
-    saveDays(next);
+    });
     flash("Físico registado");
   };
+  const delBody = k => {
+    if (!window.confirm("Apagar o registo físico de " + prettyDate(k) + "?")) return;
+    const next = {
+      ...days
+    };
+    if (next[k]) {
+      const d = {
+        ...next[k]
+      };
+      delete d.body;
+      if (!d.morning && !d.evening) delete next[k];else next[k] = d;
+    }
+    saveDays(next);
+    flash("Apagado");
+  };
   const history = Object.keys(days).filter(k => days[k].body?.peso != null).sort().reverse().slice(0, 8);
+  const pesoSeries = history.slice().reverse().map(k => days[k].body.peso);
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
     icon: /*#__PURE__*/React.createElement(LineChart, {
       size: 18,
       color: C.teal
     }),
-    hint: "A cada 3\u20134 semanas chega. O peso e a % de gordura variam muito ao dia \u2014 olha a tend\xEAncia, n\xE3o o n\xFAmero de hoje."
+    hint: "A cada 3\u20134 semanas chega. O peso e a % de gordura variam muito ao dia \u2014 olha a tend\xEAncia."
   }, "Ponto de situa\xE7\xE3o"), /*#__PURE__*/React.createElement(NumField, {
     label: "Peso (balan\xE7a de casa)",
     value: b.peso,
@@ -1785,13 +1940,13 @@ function Fisico({
     unit: "%",
     step: "0.1",
     placeholder: "10.4"
-  }), /*#__PURE__*/React.createElement(ImagePicker, {
-    label: "Foto de progresso",
-    hint: "Sempre nas mesmas condi\xE7\xF5es (manh\xE3, em jejum, mesma luz). Fica guardada e vai no relat\xF3rio para eu acompanhar a evolu\xE7\xE3o.",
-    dataURL: img.images[fotoKey],
-    onPick: u => img.putImage(fotoKey, u),
-    onRemove: () => img.delImage(fotoKey)
-  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+  }), /*#__PURE__*/React.createElement(Gallery, {
+    prefix: "img:fisico",
+    dk: key,
+    img: img,
+    label: "Fotos de progresso",
+    hint: "Podes juntar v\xE1rias (frente, lado, costas). Aparecem no relat\xF3rio deste dia."
+  }), /*#__PURE__*/React.createElement("label", {
     style: {
       fontSize: 14,
       color: C.ink,
@@ -1812,46 +1967,55 @@ function Fisico({
       fontSize: 15,
       fontFamily: FONT,
       resize: "vertical",
-      background: "#FBFDFD",
+      background: C.input,
       color: C.ink,
       boxSizing: "border-box",
       marginBottom: 16
     }
-  })), /*#__PURE__*/React.createElement(PrimaryBtn, {
+  }), /*#__PURE__*/React.createElement(PrimaryBtn, {
     onClick: save
   }, /*#__PURE__*/React.createElement(Check, {
     size: 17
-  }), " Guardar")), history.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }), " Guardar")), history.length > 0 && /*#__PURE__*/React.createElement(Card, {
     style: {
       marginTop: 18
     }
-  }, /*#__PURE__*/React.createElement("p", {
+  }, /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 13,
-      color: C.muted,
-      fontWeight: 600,
-      margin: "0 0 8px 4px"
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12
     }
-  }, "Tend\xEAncia de peso"), history.map((k, i) => {
-    const cur = days[k].body.peso;
-    const prev = history[i + 1] ? days[history[i + 1]].body.peso : null;
-    const delta = prev != null ? Math.round((cur - prev) * 10) / 10 : null;
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13.5,
+      color: C.ink,
+      fontWeight: 700
+    }
+  }, "Tend\xEAncia de peso"), pesoSeries.length > 1 && /*#__PURE__*/React.createElement(Sparkline, {
+    values: pesoSeries,
+    color: C.amber,
+    w: 110,
+    h: 30
+  })), history.map((k, i) => {
+    const cur = days[k].body.peso,
+      prev = history[i + 1] ? days[history[i + 1]].body.peso : null,
+      delta = prev != null ? Math.round((cur - prev) * 10) / 10 : null;
     return /*#__PURE__*/React.createElement("div", {
       key: k,
       style: {
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
-        background: C.surface,
-        border: `1px solid ${C.line}`,
-        borderRadius: 12,
-        padding: "10px 14px",
-        marginBottom: 8
+        gap: 10,
+        padding: "9px 0",
+        borderTop: `1px solid ${C.line}`
       }
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: 13,
-        color: C.muted
+        color: C.muted,
+        flex: 1
       }
     }, prettyDate(k)), /*#__PURE__*/React.createElement("span", {
       style: {
@@ -1866,301 +2030,292 @@ function Fisico({
         marginLeft: 8,
         fontSize: 12.5
       }
-    }, delta > 0 ? "+" : "", delta)));
+    }, delta > 0 ? "+" : "", delta)), /*#__PURE__*/React.createElement("button", {
+      onClick: () => delBody(k),
+      style: {
+        border: "none",
+        background: "transparent",
+        color: C.muted,
+        cursor: "pointer",
+        display: "flex"
+      }
+    }, /*#__PURE__*/React.createElement(Trash2, {
+      size: 15
+    })));
   })));
 }
-
-/* ------------------------------------------------------------------ */
-/*  RELATÓRIO                                                          */
-/* ------------------------------------------------------------------ */
+async function gatherImages(prefix) {
+  const keys = await store.list(prefix + ":");
+  const byDay = {};
+  for (const k of keys) {
+    const rest = k.slice(prefix.length + 1);
+    const date = rest.slice(0, 10);
+    const url = await store.get(k);
+    if (url) (byDay[date] = byDay[date] || []).push(url);
+  }
+  return byDay;
+}
+function textReport(days, strength) {
+  const keys = Object.keys(days).filter(k => k >= daysAgoKey(14)).sort();
+  const L = ["RELATÓRIO DE RECUPERAÇÃO — Guilherme Novais", `Últimos 14 dias (até ${prettyDate(dayKey())})`, ""];
+  if (!keys.length) {
+    L.push("Sem registos neste período.");
+    return L.join("\n");
+  }
+  const M = keys.map(k => days[k].morning).filter(Boolean);
+  L.push(`Sono médio: ${r1(avg(M.map(m => m.sono)))} h · Qualidade: ${r1(avg(M.map(m => m.qualidadeSono)))}/5`);
+  L.push(`Energia: ${r1(avg(M.map(m => m.energia)))}/5 · Humor: ${r1(avg(M.map(m => m.humor)))}/5 · Dores: ${r1(avg(M.map(m => m.dores)))}/5`);
+  if (strength.length) {
+    const g = {};
+    strength.forEach(s => {
+      g[s.ex] = Math.max(g[s.ex] || 0, s.peso);
+    });
+    L.push("Recordes: " + Object.entries(g).map(([n, v]) => `${n} ${v}kg`).join(", "));
+  }
+  L.push("", "(PDF completo com tabelas e imagens em anexo.)");
+  return L.join("\n");
+}
+async function generatePdf(days, strength) {
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert("A carregar o gerador de PDF — tenta outra vez daqui a instantes.");
+    return;
+  }
+  const {
+    jsPDF
+  } = window.jspdf;
+  const doc = new jsPDF({
+    unit: "pt",
+    format: "a4"
+  });
+  const W = doc.internal.pageSize.getWidth(),
+    H = doc.internal.pageSize.getHeight(),
+    M = 40;
+  const deep = [15, 59, 68],
+    teal = [44, 122, 123],
+    ink = [30, 45, 48],
+    muted = [110, 128, 130];
+  doc.setFillColor(deep[0], deep[1], deep[2]);
+  doc.rect(0, 0, W, 84, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.text("Relatório de Recuperação", M, 42);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(205, 226, 225);
+  doc.text("Guilherme Novais · últimos 14 dias · até " + prettyDate(dayKey()), M, 63);
+  const keys = Object.keys(days).filter(k => k >= daysAgoKey(14)).sort();
+  const Ms = keys.map(k => days[k].morning).filter(Boolean);
+  const Es = keys.map(k => days[k].evening).filter(Boolean);
+  let y = 104;
+  const table = (title, body) => {
+    doc.autoTable({
+      startY: y,
+      head: [[title, ""]],
+      body,
+      theme: "grid",
+      headStyles: {
+        fillColor: teal,
+        textColor: 255,
+        fontStyle: "bold",
+        fontSize: 10.5
+      },
+      styles: {
+        fontSize: 9.5,
+        cellPadding: 5,
+        textColor: ink,
+        lineColor: [220, 230, 230]
+      },
+      columnStyles: {
+        0: {
+          cellWidth: 170,
+          textColor: muted,
+          fontStyle: "bold"
+        }
+      },
+      margin: {
+        left: M,
+        right: M
+      }
+    });
+    y = doc.lastAutoTable.finalY + 16;
+  };
+  const noites = Ms.map(m => m.sono).filter(s => s != null && s < 7.5).length;
+  table("Sono e recuperação", [["Dias registados", `${keys.length} / 14`], ["Sono médio", `${r1(avg(Ms.map(m => m.sono)))} h  (noites < 7,5h: ${noites})`], ["Qualidade do sono", `${r1(avg(Ms.map(m => m.qualidadeSono)))} / 5`], ["FC de repouso média", `${r1(avg(Ms.map(m => m.fcRepouso)))} bpm`], ["Energia média", `${r1(avg(Ms.map(m => m.energia)))} / 5`], ["Humor médio", `${r1(avg(Ms.map(m => m.humor)))} / 5`], ["Dores médias", `${r1(avg(Ms.map(m => m.dores)))} / 5`], ["Apetite médio", `${r1(avg(Ms.map(m => m.apetite)))} / 5`]]);
+  if (Es.length) {
+    const cont = {};
+    Es.forEach(e => {
+      if (e.treino) cont[e.treino] = (cont[e.treino] || 0) + 1;
+    });
+    table("Treino", [["Sessões", Object.entries(cont).map(([k, v]) => `${k} ${v}`).join(", ") || "—"], ["RPE médio", `${r1(avg(Es.map(e => e.rpe)))} / 10`]]);
+  }
+  const bodyKeys = Object.keys(days).filter(k => days[k].body?.peso != null).sort();
+  if (bodyKeys.length) {
+    const lk = bodyKeys[bodyKeys.length - 1],
+      last = days[lk].body,
+      rec = bodyKeys.filter(k => k >= daysAgoKey(28));
+    const rows = [["Peso mais recente", `${last.peso} kg${last.gordura ? ` · ${last.gordura}% gordura` : ""} (${prettyDate(lk)})`]];
+    if (rec.length >= 2) rows.push(["Variação (~4 sem.)", `${days[lk].body.peso - days[rec[0]].body.peso > 0 ? "+" : ""}${r1(days[lk].body.peso - days[rec[0]].body.peso)} kg`]);
+    table("Físico", rows);
+  }
+  if (strength.length) {
+    const g = {};
+    strength.forEach(s => {
+      g[s.ex] = Math.max(g[s.ex] || 0, s.peso);
+    });
+    table("Força — recordes", Object.entries(g).map(([n, v]) => [n, `${v} kg`]));
+  }
+  const hrByDay = await gatherImages("img:hr"),
+    fisByDay = await gatherImages("img:fisico");
+  const dkeys = keys.slice().reverse();
+  for (const k of dkeys) {
+    if (y > H - 130) {
+      doc.addPage();
+      y = M;
+    }
+    doc.setFillColor(teal[0], teal[1], teal[2]);
+    doc.roundedRect(M, y, W - 2 * M, 22, 4, 4, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text(prettyDate(k), M + 10, y + 15);
+    y += 30;
+    const m = days[k].morning || {},
+      e = days[k].evening || {},
+      b = days[k].body || {},
+      rows = [];
+    if (m.sono != null) rows.push(["Sono", `${m.sono} h${m.qualidadeSono ? ` · qualidade ${m.qualidadeSono}/5` : ""}`]);
+    if (m.fcRepouso) rows.push(["FC repouso", `${m.fcRepouso} bpm`]);
+    if (m.energia) rows.push(["Energia", `${m.energia}/5`]);
+    if (m.humor) rows.push(["Humor", `${m.humor}/5`]);
+    if (m.dores) rows.push(["Dores", `${m.dores}/5`]);
+    if (m.apetite) rows.push(["Apetite", `${m.apetite}/5`]);
+    if (e.treino) rows.push(["Treino", `${e.treino}${e.rpe ? ` · RPE ${e.rpe}/10` : ""}`]);
+    if (e.dor) rows.push(["Dor/lesão", e.dor]);
+    if (b.peso != null) rows.push(["Peso", `${b.peso} kg${b.gordura ? ` · ${b.gordura}%` : ""}`]);
+    if (b.notas) rows.push(["Nota", b.notas]);
+    if (rows.length) {
+      doc.autoTable({
+        startY: y,
+        body: rows,
+        theme: "plain",
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          textColor: ink
+        },
+        columnStyles: {
+          0: {
+            fontStyle: "bold",
+            cellWidth: 95,
+            textColor: muted
+          }
+        },
+        margin: {
+          left: M,
+          right: M
+        }
+      });
+      y = doc.lastAutoTable.finalY + 8;
+    }
+    const imgs = [...(fisByDay[k] || []), ...(hrByDay[k] || [])];
+    if (imgs.length) {
+      const perRow = 3,
+        gap = 10,
+        tw = (W - 2 * M - (perRow - 1) * gap) / perRow,
+        maxH = 150;
+      for (let i = 0; i < imgs.length; i += perRow) {
+        const row = imgs.slice(i, i + perRow),
+          sizes = await Promise.all(row.map(imgSize));
+        const draws = sizes.map(s => {
+          const sc = Math.min(tw / s.w, maxH / s.h);
+          return {
+            dw: s.w * sc,
+            dh: s.h * sc
+          };
+        });
+        const rowH = Math.max.apply(null, draws.map(d => d.dh));
+        if (y + rowH > H - M) {
+          doc.addPage();
+          y = M;
+        }
+        row.forEach((url, j) => {
+          try {
+            doc.addImage(url, "JPEG", M + j * (tw + gap) + (tw - draws[j].dw) / 2, y, draws[j].dw, draws[j].dh);
+          } catch (er) {}
+        });
+        y += rowH + gap;
+      }
+    }
+    y += 8;
+  }
+  if (!keys.length) {
+    doc.setTextColor(muted[0], muted[1], muted[2]);
+    doc.setFontSize(11);
+    doc.text("Sem registos nos últimos 14 dias.", M, y + 10);
+  }
+  doc.save("relatorio_" + dayKey() + ".pdf");
+}
 function Relatorio({
   days,
   strength,
-  flash,
-  img
+  flash
 }) {
-  const [imgKeys, setImgKeys] = useState({
-    hr: [],
-    fisico: []
-  });
-  useEffect(() => {
-    (async () => {
-      const all = await store.list("img:");
-      const hr = all.filter(k => k.startsWith("img:hr:") && k.slice(7) >= daysAgoKey(14)).sort();
-      const fisico = all.filter(k => k.startsWith("img:fisico:") && k.slice(11) >= daysAgoKey(28)).sort();
-      setImgKeys({
-        hr,
-        fisico
-      });
-      img.loadImages([...hr, ...fisico]);
-    })();
-  }, []); // eslint-disable-line
-
-  const baseText = useMemo(() => buildReport(days, strength), [days, strength]);
-  const fullText = baseText + imagesFooter(imgKeys);
-  const copy = async () => {
+  const [busy, setBusy] = useState(false);
+  const doPdf = async () => {
+    setBusy(true);
     try {
-      await navigator.clipboard.writeText(fullText);
-      flash("Relatório copiado");
+      await generatePdf(days, strength);
+      flash("PDF gerado");
     } catch (e) {
-      flash("Seleciona e copia o texto");
+      alert("Não consegui gerar o PDF.");
+    }
+    setBusy(false);
+  };
+  const copyTxt = async () => {
+    try {
+      await navigator.clipboard.writeText(textReport(days, strength));
+      flash("Resumo copiado");
+    } catch (e) {
+      flash("Não consegui copiar");
     }
   };
-  const download = () => {
-    const blob = new Blob([fullText], {
-      type: "text/plain"
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `recuperacao_${dayKey()}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    flash("Transferido");
-  };
-  const thumbs = [...imgKeys.fisico.map(k => ({
-    k,
-    label: "Físico " + prettyDate(k.slice(11)),
-    file: "fisico_" + k.slice(11) + ".jpg"
-  })), ...imgKeys.hr.map(k => ({
-    k,
-    label: "Batimentos " + prettyDate(k.slice(7)),
-    file: "batimentos_" + k.slice(7) + ".jpg"
-  }))].filter(t => img.images[t.k]);
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
     icon: /*#__PURE__*/React.createElement(FileText, {
       size: 18,
       color: C.teal
     }),
-    hint: "Cola este texto na nossa conversa do projeto Sa\xFAde e anexa as imagens na mesma mensagem."
-  }, "Relat\xF3rio dos \xFAltimos 14 dias"), /*#__PURE__*/React.createElement("pre", {
+    hint: "Gera um PDF com tabelas e as fotos de cada dia. Podes enviar-mo aqui no chat para eu avaliar."
+  }, "Relat\xF3rio dos \xFAltimos 14 dias"), /*#__PURE__*/React.createElement("div", {
     style: {
-      whiteSpace: "pre-wrap",
-      fontSize: 12.5,
-      lineHeight: 1.55,
-      background: "#F7FAFA",
-      border: `1px solid ${C.line}`,
-      borderRadius: 12,
-      padding: 14,
-      color: C.ink,
-      fontFamily: "ui-monospace, Menlo, monospace",
-      maxHeight: 320,
-      overflow: "auto"
+      marginBottom: 12
     }
-  }, fullText), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 10,
-      marginTop: 14
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: copy,
-    style: {
-      flex: 1,
-      padding: 12,
-      borderRadius: 12,
-      border: "none",
-      background: C.deep,
-      color: "#fff",
-      fontWeight: 600,
-      fontSize: 14,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 7,
-      cursor: "pointer"
-    }
+  }, /*#__PURE__*/React.createElement(PrimaryBtn, {
+    onClick: doPdf,
+    disabled: busy
+  }, /*#__PURE__*/React.createElement(Download, {
+    size: 17
+  }), " ", busy ? "A gerar PDF…" : "Transferir PDF")), /*#__PURE__*/React.createElement(GhostBtn, {
+    onClick: copyTxt
   }, /*#__PURE__*/React.createElement(Copy, {
-    size: 16
-  }), " Copiar texto"), /*#__PURE__*/React.createElement("button", {
-    onClick: download,
+    size: 15
+  }), " Copiar resumo (texto)"), /*#__PURE__*/React.createElement("p", {
     style: {
-      flex: 1,
-      padding: 12,
-      borderRadius: 12,
-      border: `1px solid ${C.deep}`,
-      background: "transparent",
-      color: C.deep,
-      fontWeight: 600,
-      fontSize: 14,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 7,
-      cursor: "pointer"
-    }
-  }, /*#__PURE__*/React.createElement(Download, {
-    size: 16
-  }), " Transferir"))), thumbs.length > 0 && /*#__PURE__*/React.createElement(Card, {
-    style: {
-      marginTop: 16
-    }
-  }, /*#__PURE__*/React.createElement(SectionTitle, {
-    icon: /*#__PURE__*/React.createElement(Camera, {
-      size: 18,
-      color: C.teal
-    }),
-    hint: "Transfere cada imagem e anexa-a no chat, para eu a poder ver e comentar."
-  }, "Imagens para anexar"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "grid",
-      gridTemplateColumns: "repeat(2, minmax(0,1fr))",
-      gap: 12
-    }
-  }, thumbs.map(t => /*#__PURE__*/React.createElement("div", {
-    key: t.k,
-    style: {
-      border: `1px solid ${C.line}`,
-      borderRadius: 12,
-      overflow: "hidden",
-      background: "#F2F5F6"
-    }
-  }, /*#__PURE__*/React.createElement("img", {
-    src: img.images[t.k],
-    alt: t.label,
-    style: {
-      width: "100%",
-      height: 120,
-      objectFit: "cover",
-      display: "block"
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "8px 10px"
-    }
-  }, /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 11.5,
-      color: C.muted,
-      margin: "0 0 6px"
-    }
-  }, t.label), /*#__PURE__*/React.createElement("button", {
-    onClick: () => downloadDataUrl(img.images[t.k], t.file),
-    style: {
-      width: "100%",
-      padding: "7px",
-      borderRadius: 8,
-      border: `1px solid ${C.deep}`,
-      background: "transparent",
-      color: C.deep,
       fontSize: 12,
-      fontWeight: 600,
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 5
+      color: C.muted,
+      marginTop: 16,
+      lineHeight: 1.55
     }
-  }, /*#__PURE__*/React.createElement(Download, {
-    size: 13
-  }), " Transferir")))))));
+  }, "O PDF inclui as m\xE9dias, os recordes de for\xE7a e, dia a dia, os teus registos com as respetivas fotos e prints. Envia-mo na conversa do projeto Sa\xFAde para eu acompanhar a evolu\xE7\xE3o com o teu historial completo.")));
 }
-function avg(arr) {
-  const v = arr.filter(x => x != null && !isNaN(x));
-  return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
-}
-function r1(x) {
-  return x == null ? "—" : Math.round(x * 10) / 10;
-}
-function buildReport(days, strength) {
-  const keys = Object.keys(days).filter(k => k >= daysAgoKey(14)).sort();
-  const L = [];
-  L.push("RELATÓRIO DE RECUPERAÇÃO — Guilherme Novais");
-  L.push(`Período: últimos 14 dias (até ${prettyDate(dayKey())})`);
-  L.push("");
-  if (keys.length === 0) {
-    L.push("Sem registos neste período.");
-    return L.join("\n");
-  }
-  const mornings = keys.map(k => days[k].morning).filter(Boolean);
-  const sono = mornings.map(m => m.sono);
-  const noitesCurtas = sono.filter(s => s != null && s < 7.5).length;
-  const fc = mornings.map(m => m.fcRepouso);
-  L.push("— SONO E RECUPERAÇÃO —");
-  L.push(`Dias registados: ${keys.length}/14`);
-  L.push(`Sono médio: ${r1(avg(sono))} h  (noites < 7,5h: ${noitesCurtas})`);
-  L.push(`Qualidade média do sono: ${r1(avg(mornings.map(m => m.qualidadeSono)))}/5`);
-  const fcVals = fc.filter(x => x != null);
-  if (fcVals.length) {
-    L.push(`FC de repouso média: ${r1(avg(fcVals))} bpm`);
-    if (fcVals.length >= 4) {
-      const meio = Math.floor(fcVals.length / 2);
-      const d = avg(fcVals.slice(meio)) - avg(fcVals.slice(0, meio));
-      if (d >= 3) L.push(`AVISO: FC de repouso a subir (~+${r1(d)} bpm) — possível sub-recuperação ou início de doença.`);
-    }
-  } else {
-    L.push("FC de repouso: ver prints de batimentos anexados.");
-  }
-  L.push(`Energia média: ${r1(avg(mornings.map(m => m.energia)))}/5`);
-  L.push(`Humor médio: ${r1(avg(mornings.map(m => m.humor)))}/5`);
-  L.push(`Dores médias: ${r1(avg(mornings.map(m => m.dores)))}/5`);
-  L.push(`Apetite médio: ${r1(avg(mornings.map(m => m.apetite)))}/5`);
-  L.push("");
-  const evenings = keys.map(k => days[k].evening).filter(Boolean);
-  if (evenings.length) {
-    const cont = {};
-    evenings.forEach(e => {
-      if (e.treino) cont[e.treino] = (cont[e.treino] || 0) + 1;
-    });
-    L.push("— CARGA DE TREINO —");
-    L.push("Sessões: " + (Object.entries(cont).map(([k, v]) => `${k} ${v}`).join(", ") || "—"));
-    L.push(`RPE médio: ${r1(avg(evenings.map(e => e.rpe)))}/10`);
-    const dores = evenings.filter(e => e.dor && e.dor.trim()).map(e => e.dor.trim());
-    if (dores.length) L.push("Dores/lesões: " + dores.join(" | "));
-    L.push("");
-  }
-  const bodyKeys = Object.keys(days).filter(k => days[k].body?.peso != null).sort();
-  if (bodyKeys.length) {
-    const lastK = bodyKeys[bodyKeys.length - 1];
-    const last = days[lastK].body;
-    L.push("— FÍSICO —");
-    L.push(`Peso mais recente: ${last.peso} kg${last.gordura ? ` · ${last.gordura}% gordura` : ""}  (${prettyDate(lastK)})`);
-    const recent = bodyKeys.filter(k => k >= daysAgoKey(28));
-    if (recent.length >= 2) {
-      const d = days[lastK].body.peso - days[recent[0]].body.peso;
-      L.push(`Variação (~4 semanas): ${d > 0 ? "+" : ""}${r1(d)} kg`);
-    }
-    if (last.notas) L.push(`Nota: ${last.notas}`);
-    L.push("");
-  }
-  if (strength.length) {
-    const byEx = {};
-    strength.forEach(s => {
-      byEx[s.ex] = byEx[s.ex] || [];
-      byEx[s.ex].push(s);
-    });
-    L.push("— FORÇA (recordes) —");
-    Object.entries(byEx).forEach(([n, l]) => {
-      L.push(`${n}: ${Math.max(...l.map(x => x.peso))} kg (máx)`);
-    });
-    L.push("");
-  }
-  return L.join("\n");
-}
-function imagesFooter({
-  hr,
-  fisico
-}) {
-  const L = ["— IMAGENS —"];
-  L.push(`Prints de batimentos: ${hr.length}  ·  Fotos de físico: ${fisico.length}`);
-  L.push("(anexa estas imagens no chat, junto com este texto)");
-  L.push("");
-  L.push("— A MINHA PERGUNTA —");
-  L.push("Como está a minha recuperação e o que devo ajustar?");
-  return "\n" + L.join("\n");
-}
-
-/* ------------------------------------------------------------------ */
-/*  Estilos utilitários                                                */
-/* ------------------------------------------------------------------ */
 function pill(active) {
   return {
     flex: 1,
     padding: "10px",
     borderRadius: 12,
-    border: `1px solid ${active ? C.deep : C.line}`,
-    background: active ? C.deep : C.surface,
-    color: active ? "#fff" : C.muted,
+    border: `1px solid ${active ? C.primary : C.line}`,
+    background: active ? C.primary : C.surface,
+    color: active ? C.onPrimary : C.muted,
     fontWeight: 600,
     fontSize: 13.5,
     cursor: "pointer",
@@ -2176,27 +2331,14 @@ function chip(active) {
     borderRadius: 20,
     border: `1px solid ${active ? C.teal : C.line}`,
     background: active ? C.tealSoft : C.surface,
-    color: active ? C.deep : C.muted,
+    color: active ? C.heading : C.muted,
     fontWeight: 600,
     fontSize: 13.5,
     cursor: "pointer"
   };
 }
-function Empty({
-  children
-}) {
-  return /*#__PURE__*/React.createElement("p", {
-    style: {
-      textAlign: "center",
-      color: C.muted,
-      fontSize: 13.5,
-      padding: "30px 20px",
-      lineHeight: 1.5
-    }
-  }, children);
-}
 
-/* ---------------- Ecrãs de autenticação ---------------- */
+/* ---------------- Ecrãs de autenticação + Root ---------------- */
 
 function Splash({
   text
@@ -2241,15 +2383,25 @@ function AuthShell({
       justifyContent: "center",
       marginBottom: 10
     }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 52,
+      height: 52,
+      borderRadius: 15,
+      background: C.tealSoft,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }
   }, /*#__PURE__*/React.createElement(Waves, {
-    size: 30,
+    size: 28,
     color: C.teal,
     strokeWidth: 2.2
-  })), /*#__PURE__*/React.createElement("h1", {
+  }))), /*#__PURE__*/React.createElement("h1", {
     style: {
       fontFamily: SERIF,
       fontSize: 24,
-      color: C.deep,
+      color: C.heading,
       textAlign: "center",
       margin: "0 0 6px",
       fontWeight: 600
@@ -2265,10 +2417,10 @@ function AuthShell({
   }, subtitle), /*#__PURE__*/React.createElement("div", {
     style: {
       background: C.surface,
-      borderRadius: 18,
+      borderRadius: 20,
       padding: 22,
       border: `1px solid ${C.line}`,
-      boxShadow: "0 1px 3px rgba(15,59,68,0.06)"
+      boxShadow: C.shadow
     }
   }, children)));
 }
@@ -2277,7 +2429,7 @@ function Field({
   value,
   onChange,
   placeholder,
-  type = "text"
+  type
 }) {
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2292,7 +2444,7 @@ function Field({
       marginBottom: 6
     }
   }, label), /*#__PURE__*/React.createElement("input", {
-    type: type,
+    type: type || "text",
     value: value,
     onChange: e => onChange(e.target.value),
     placeholder: placeholder,
@@ -2306,7 +2458,7 @@ function Field({
       borderRadius: 12,
       padding: "12px 14px",
       fontSize: 16,
-      background: "#FBFDFD",
+      background: C.input,
       color: C.ink,
       fontFamily: FONT
     }
@@ -2325,8 +2477,8 @@ function BigBtn({
       padding: 13,
       borderRadius: 12,
       border: "none",
-      background: busy ? C.tealSoft : C.deep,
-      color: busy ? C.muted : "#fff",
+      background: busy ? C.tealSoft : C.primary,
+      color: busy ? C.muted : C.onPrimary,
       fontSize: 15,
       fontWeight: 600,
       cursor: busy ? "default" : "pointer",
@@ -2399,7 +2551,7 @@ function CloudSetup({
   };
   return /*#__PURE__*/React.createElement(AuthShell, {
     title: "Ligar \xE0 tua nuvem",
-    subtitle: "S\xF3 \xE9 preciso uma vez neste telem\xF3vel. Cola a chave p\xFAblica (sb_publishable_\u2026 ou anon) do teu Supabase."
+    subtitle: "S\xF3 \xE9 preciso uma vez neste dispositivo. Cola a chave p\xFAblica (sb_publishable_\u2026 ou anon) do teu Supabase."
   }, /*#__PURE__*/React.createElement(Field, {
     label: "Endere\xE7o do projeto (URL)",
     value: url,
@@ -2466,9 +2618,9 @@ function Login({
       setBusy(false);
     }
   };
-  const tabBtn = (m, label) => /*#__PURE__*/React.createElement("button", {
+  const tabBtn = (mm, label) => /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      setMode(m);
+      setMode(mm);
       setErr("");
       setMsg("");
     },
@@ -2478,11 +2630,11 @@ function Login({
       borderRadius: 10,
       border: "none",
       cursor: "pointer",
-      background: mode === m ? C.surface : "transparent",
-      color: mode === m ? C.deep : C.muted,
-      fontWeight: mode === m ? 700 : 500,
+      background: mode === mm ? C.surface : "transparent",
+      color: mode === mm ? C.heading : C.muted,
+      fontWeight: mode === mm ? 700 : 500,
       fontSize: 13.5,
-      boxShadow: mode === m ? "0 1px 2px rgba(15,59,68,0.1)" : "none"
+      boxShadow: mode === mm ? C.shadow : "none"
     }
   }, label);
   return /*#__PURE__*/React.createElement(AuthShell, {
@@ -2492,7 +2644,7 @@ function Login({
     style: {
       display: "flex",
       gap: 6,
-      background: "#E2ECEC",
+      background: C.track,
       padding: 5,
       borderRadius: 12,
       marginBottom: 18
@@ -2514,9 +2666,53 @@ function Login({
     busy: busy
   }, mode === "criar" ? "Criar conta" : "Entrar"));
 }
+function ThemeToggle({
+  theme,
+  onToggle
+}) {
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: onToggle,
+    "aria-label": "Tema",
+    style: {
+      position: "fixed",
+      top: "calc(env(safe-area-inset-top) + 14px)",
+      right: 16,
+      zIndex: 50,
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      border: `1px solid ${C.line}`,
+      background: C.surface,
+      color: C.heading,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: C.shadow
+    }
+  }, theme === "dark" ? /*#__PURE__*/React.createElement(Sun, {
+    size: 18,
+    color: C.teal
+  }) : /*#__PURE__*/React.createElement(Moon, {
+    size: 18,
+    color: C.teal
+  }));
+}
 function Root() {
   const [phase, setPhase] = useState("loading");
   const [email, setEmail] = useState("");
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem("ui:theme") || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    } catch (e) {
+      return "light";
+    }
+  });
+  const toggleTheme = () => {
+    const n = theme === "dark" ? "light" : "dark";
+    applyTheme(n);
+    setTheme(n);
+  };
   const enter = async session => {
     uid = session.user.id;
     setEmail(session.user.email || "");
@@ -2560,16 +2756,14 @@ function Root() {
       setPhase("login");
     })();
   }, []);
-  if (phase === "loading") return /*#__PURE__*/React.createElement(Splash, {
+  let content;
+  if (phase === "loading") content = /*#__PURE__*/React.createElement(Splash, {
     text: "A ligar \xE0 tua nuvem\u2026"
-  });
-  if (phase === "setup") return /*#__PURE__*/React.createElement(CloudSetup, {
+  });else if (phase === "setup") content = /*#__PURE__*/React.createElement(CloudSetup, {
     onDone: () => setPhase("login")
-  });
-  if (phase === "login") return /*#__PURE__*/React.createElement(Login, {
+  });else if (phase === "login") content = /*#__PURE__*/React.createElement(Login, {
     onAuthed: enter
-  });
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Tracker, null), /*#__PURE__*/React.createElement("div", {
+  });else content = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Tracker, null), /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 560,
       margin: "0 auto",
@@ -2581,7 +2775,7 @@ function Root() {
       fontSize: 12,
       color: C.muted
     }
-  }, "Sess\xE3o: ", email, " \xB7", " ", /*#__PURE__*/React.createElement("button", {
+  }, "Sess\xE3o: ", email, " \xB7 ", /*#__PURE__*/React.createElement("button", {
     onClick: logout,
     style: {
       border: "none",
@@ -2593,6 +2787,10 @@ function Root() {
       padding: 0
     }
   }, "Sair"))));
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ThemeToggle, {
+    theme: theme,
+    onToggle: toggleTheme
+  }), content);
 }
 const rootEl = document.getElementById("root");
 if (ReactDOM.createRoot) {
