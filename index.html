@@ -319,6 +319,7 @@ var d=null!=c&&c.hydratedSources||null,e=!1,f="",g=aj;null!==c&&void 0!==c&&(!0=
 function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmountComponentAtNode=function(a){if(!Vd(a))throw Error(m(40));return a._reactRootContainer?(yb(function(){Wd(null,null,a,!1,function(){a._reactRootContainer=null;a[Ja]=null})}),!0):!1};Q.unstable_batchedUpdates=Tf;Q.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!Vd(c))throw Error(m(200));if(null==a||void 0===a._reactInternals)throw Error(m(38));return Wd(a,b,c,!1,d)};Q.version="18.3.1-next-f1338f8080-20240426"});
 })();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>const {
   useState,
   useEffect,
@@ -540,35 +541,80 @@ const SERIF = "ui-serif, Georgia, 'Times New Roman', serif";
 /* ------------------------------------------------------------------ */
 /*  Armazenamento persistente (com fallback em memória)                */
 /* ------------------------------------------------------------------ */
+let sb = null;
+let uid = null;
+let cache = {};
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function initClient(url, key) {
+  try {
+    if (!window.supabase) return false;
+    sb = window.supabase.createClient(url, key);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+async function loadCore() {
+  cache = {};
+  if (!sb) return;
+  try {
+    const {
+      data,
+      error
+    } = await sb.from("dados").select("chave,valor").in("chave", ["log:days", "log:strength"]);
+    if (!error && data) data.forEach(r => {
+      cache[r.chave] = r.valor;
+    });
+  } catch (e) {/* offline: segue com cache vazia */}
+}
 const store = {
   async get(key) {
+    if (key in cache) return cache[key];
+    if (!sb) return null;
     try {
-      return localStorage.getItem(key);
+      const {
+        data
+      } = await sb.from("dados").select("valor").eq("chave", key).maybeSingle();
+      const v = data ? data.valor : null;
+      cache[key] = v;
+      return v;
     } catch (e) {
       return null;
     }
   },
   async set(key, value) {
+    cache[key] = value;
+    if (!sb || !uid) return;
     try {
-      localStorage.setItem(key, value);
+      await sb.from("dados").upsert({
+        user_id: uid,
+        chave: key,
+        valor: value,
+        atualizado: new Date().toISOString()
+      }, {
+        onConflict: "user_id,chave"
+      });
     } catch (e) {
-      alert("Sem espaço para guardar. Apaga fotos antigas ou exporta o relatório.");
+      console.error("sync", e);
     }
   },
   async del(key) {
+    delete cache[key];
+    if (!sb) return;
     try {
-      localStorage.removeItem(key);
+      await sb.from("dados").delete().eq("chave", key);
     } catch (e) {}
   },
   async list(prefix) {
-    const out = [];
+    if (!sb) return Object.keys(cache).filter(k => k.startsWith(prefix));
     try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith(prefix)) out.push(k);
-      }
-    } catch (e) {}
-    return out;
+      const {
+        data
+      } = await sb.from("dados").select("chave").like("chave", prefix + "%");
+      return data ? data.map(r => r.chave) : [];
+    } catch (e) {
+      return Object.keys(cache).filter(k => k.startsWith(prefix));
+    }
   }
 };
 
@@ -966,7 +1012,7 @@ function PrimaryBtn({
 /* ------------------------------------------------------------------ */
 /*  App                                                                */
 /* ------------------------------------------------------------------ */
-function App() {
+function Tracker() {
   const [tab, setTab] = useState("diario");
   const [days, setDays] = useState({});
   const [strength, setStrength] = useState([]);
@@ -2149,11 +2195,410 @@ function Empty({
     }
   }, children);
 }
+
+/* ---------------- Ecrãs de autenticação ---------------- */
+
+function Splash({
+  text
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: "100vh",
+      background: C.bg,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: C.muted,
+      fontFamily: FONT,
+      fontSize: 14
+    }
+  }, text);
+}
+function AuthShell({
+  title,
+  subtitle,
+  children
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: "100vh",
+      background: C.bg,
+      fontFamily: FONT,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "24px 16px",
+      boxSizing: "border-box"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: "100%",
+      maxWidth: 400
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "center",
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement(Waves, {
+    size: 30,
+    color: C.teal,
+    strokeWidth: 2.2
+  })), /*#__PURE__*/React.createElement("h1", {
+    style: {
+      fontFamily: SERIF,
+      fontSize: 24,
+      color: C.deep,
+      textAlign: "center",
+      margin: "0 0 6px",
+      fontWeight: 600
+    }
+  }, title), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13.5,
+      color: C.muted,
+      textAlign: "center",
+      margin: "0 0 22px",
+      lineHeight: 1.5
+    }
+  }, subtitle), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.surface,
+      borderRadius: 18,
+      padding: 22,
+      border: `1px solid ${C.line}`,
+      boxShadow: "0 1px 3px rgba(15,59,68,0.06)"
+    }
+  }, children)));
+}
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text"
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 13,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 6
+    }
+  }, label), /*#__PURE__*/React.createElement("input", {
+    type: type,
+    value: value,
+    onChange: e => onChange(e.target.value),
+    placeholder: placeholder,
+    autoCapitalize: "none",
+    autoCorrect: "off",
+    spellCheck: false,
+    style: {
+      width: "100%",
+      boxSizing: "border-box",
+      border: `1px solid ${C.line}`,
+      borderRadius: 12,
+      padding: "12px 14px",
+      fontSize: 16,
+      background: "#FBFDFD",
+      color: C.ink,
+      fontFamily: FONT
+    }
+  }));
+}
+function BigBtn({
+  children,
+  onClick,
+  busy
+}) {
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: onClick,
+    disabled: busy,
+    style: {
+      width: "100%",
+      padding: 13,
+      borderRadius: 12,
+      border: "none",
+      background: busy ? C.tealSoft : C.deep,
+      color: busy ? C.muted : "#fff",
+      fontSize: 15,
+      fontWeight: 600,
+      cursor: busy ? "default" : "pointer",
+      marginTop: 4
+    }
+  }, busy ? "…" : children);
+}
+function ErrMsg({
+  children
+}) {
+  return /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: C.warn,
+      margin: "0 0 12px",
+      textAlign: "center",
+      lineHeight: 1.4
+    }
+  }, children);
+}
+function OkMsg({
+  children
+}) {
+  return /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: C.teal,
+      margin: "0 0 12px",
+      textAlign: "center",
+      lineHeight: 1.4
+    }
+  }, children);
+}
+function traduzErro(m) {
+  if (!m) return "Ocorreu um erro.";
+  if (/Invalid login/i.test(m)) return "Email ou palavra-passe errados.";
+  if (/already registered|already exists/i.test(m)) return "Já existe conta com este email — escolhe \"Entrar\".";
+  if (/at least 6/i.test(m)) return "A palavra-passe precisa de pelo menos 6 caracteres.";
+  if (/Email not confirmed/i.test(m)) return "Confirma o email antes de entrar.";
+  return m;
+}
+function CloudSetup({
+  onDone
+}) {
+  const [url, setUrl] = useState(localStorage.getItem("sb:url") || "https://iypjywspmjpqyclocrsp.supabase.co");
+  const [key, setKey] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const go = async () => {
+    if (!url.trim() || !key.trim()) {
+      setErr("Preenche o endereço e a chave.");
+      return;
+    }
+    setBusy(true);
+    setErr("");
+    let t = 0;
+    while (!window.supabase && t < 60) {
+      await sleep(100);
+      t++;
+    }
+    localStorage.setItem("sb:url", url.trim());
+    localStorage.setItem("sb:key", key.trim());
+    const ok = initClient(url.trim(), key.trim());
+    setBusy(false);
+    if (!ok) {
+      setErr("Não consegui ligar. Confirma os valores e a ligação à internet.");
+      return;
+    }
+    onDone();
+  };
+  return /*#__PURE__*/React.createElement(AuthShell, {
+    title: "Ligar \xE0 tua nuvem",
+    subtitle: "S\xF3 \xE9 preciso uma vez neste telem\xF3vel. Cola a chave p\xFAblica (sb_publishable_\u2026 ou anon) do teu Supabase."
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Endere\xE7o do projeto (URL)",
+    value: url,
+    onChange: setUrl,
+    placeholder: "https://....supabase.co"
+  }), /*#__PURE__*/React.createElement(Field, {
+    label: "Chave p\xFAblica",
+    value: key,
+    onChange: setKey,
+    placeholder: "sb_publishable_..."
+  }), err && /*#__PURE__*/React.createElement(ErrMsg, null, err), /*#__PURE__*/React.createElement(BigBtn, {
+    onClick: go,
+    busy: busy
+  }, "Ligar"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11.5,
+      color: C.muted,
+      margin: "14px 0 0",
+      lineHeight: 1.5
+    }
+  }, "A chave p\xFAblica pode andar na app com seguran\xE7a. Nunca uses aqui a chave \"secret\" / \"service_role\"."));
+}
+function Login({
+  onAuthed
+}) {
+  const [mode, setMode] = useState("entrar");
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [msg, setMsg] = useState("");
+  const submit = async () => {
+    if (!email.trim() || !pw) {
+      setErr("Preenche o email e a palavra-passe.");
+      return;
+    }
+    setBusy(true);
+    setErr("");
+    setMsg("");
+    try {
+      let res;
+      if (mode === "criar") res = await sb.auth.signUp({
+        email: email.trim(),
+        password: pw
+      });else res = await sb.auth.signInWithPassword({
+        email: email.trim(),
+        password: pw
+      });
+      if (res.error) {
+        setErr(traduzErro(res.error.message));
+        setBusy(false);
+        return;
+      }
+      const session = res.data.session;
+      if (!session) {
+        setMsg("Conta criada. Confirma o email e depois entra.");
+        setMode("entrar");
+        setBusy(false);
+        return;
+      }
+      await onAuthed(session);
+    } catch (e) {
+      setErr("Algo correu mal. Verifica a internet e tenta de novo.");
+      setBusy(false);
+    }
+  };
+  const tabBtn = (m, label) => /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setMode(m);
+      setErr("");
+      setMsg("");
+    },
+    style: {
+      flex: 1,
+      padding: "9px",
+      borderRadius: 10,
+      border: "none",
+      cursor: "pointer",
+      background: mode === m ? C.surface : "transparent",
+      color: mode === m ? C.deep : C.muted,
+      fontWeight: mode === m ? 700 : 500,
+      fontSize: 13.5,
+      boxShadow: mode === m ? "0 1px 2px rgba(15,59,68,0.1)" : "none"
+    }
+  }, label);
+  return /*#__PURE__*/React.createElement(AuthShell, {
+    title: "A minha recupera\xE7\xE3o",
+    subtitle: mode === "criar" ? "Cria a tua conta para guardares os dados na nuvem." : "Entra para veres e sincronizares os teus dados."
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 6,
+      background: "#E2ECEC",
+      padding: 5,
+      borderRadius: 12,
+      marginBottom: 18
+    }
+  }, tabBtn("entrar", "Entrar"), tabBtn("criar", "Criar conta")), /*#__PURE__*/React.createElement(Field, {
+    label: "Email",
+    value: email,
+    onChange: setEmail,
+    placeholder: "tu@email.com",
+    type: "email"
+  }), /*#__PURE__*/React.createElement(Field, {
+    label: "Palavra-passe",
+    value: pw,
+    onChange: setPw,
+    placeholder: "m\xEDnimo 6 caracteres",
+    type: "password"
+  }), err && /*#__PURE__*/React.createElement(ErrMsg, null, err), msg && /*#__PURE__*/React.createElement(OkMsg, null, msg), /*#__PURE__*/React.createElement(BigBtn, {
+    onClick: submit,
+    busy: busy
+  }, mode === "criar" ? "Criar conta" : "Entrar"));
+}
+function Root() {
+  const [phase, setPhase] = useState("loading");
+  const [email, setEmail] = useState("");
+  const enter = async session => {
+    uid = session.user.id;
+    setEmail(session.user.email || "");
+    await loadCore();
+    setPhase("ready");
+  };
+  const logout = async () => {
+    try {
+      await sb.auth.signOut();
+    } catch (e) {}
+    cache = {};
+    uid = null;
+    setPhase("login");
+  };
+  useEffect(() => {
+    (async () => {
+      const url = localStorage.getItem("sb:url");
+      const key = localStorage.getItem("sb:key");
+      if (!url || !key) {
+        setPhase("setup");
+        return;
+      }
+      let t = 0;
+      while (!window.supabase && t < 60) {
+        await sleep(100);
+        t++;
+      }
+      if (!initClient(url, key)) {
+        setPhase("setup");
+        return;
+      }
+      try {
+        const {
+          data
+        } = await sb.auth.getSession();
+        if (data && data.session) {
+          await enter(data.session);
+          return;
+        }
+      } catch (e) {}
+      setPhase("login");
+    })();
+  }, []);
+  if (phase === "loading") return /*#__PURE__*/React.createElement(Splash, {
+    text: "A ligar \xE0 tua nuvem\u2026"
+  });
+  if (phase === "setup") return /*#__PURE__*/React.createElement(CloudSetup, {
+    onDone: () => setPhase("login")
+  });
+  if (phase === "login") return /*#__PURE__*/React.createElement(Login, {
+    onAuthed: enter
+  });
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Tracker, null), /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 560,
+      margin: "0 auto",
+      padding: "0 16px 34px",
+      textAlign: "center"
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12,
+      color: C.muted
+    }
+  }, "Sess\xE3o: ", email, " \xB7", " ", /*#__PURE__*/React.createElement("button", {
+    onClick: logout,
+    style: {
+      border: "none",
+      background: "transparent",
+      color: C.teal,
+      fontWeight: 600,
+      cursor: "pointer",
+      fontSize: 12,
+      padding: 0
+    }
+  }, "Sair"))));
+}
 const rootEl = document.getElementById("root");
 if (ReactDOM.createRoot) {
-  ReactDOM.createRoot(rootEl).render(/*#__PURE__*/React.createElement(App, null));
+  ReactDOM.createRoot(rootEl).render(/*#__PURE__*/React.createElement(Root, null));
 } else {
-  ReactDOM.render(/*#__PURE__*/React.createElement(App, null), rootEl);
+  ReactDOM.render(/*#__PURE__*/React.createElement(Root, null), rootEl);
 }</script>
 </body>
 </html>
