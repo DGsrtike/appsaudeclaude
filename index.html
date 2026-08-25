@@ -521,43 +521,102 @@ const X = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.create
   x2: "18",
   y2: "18"
 }));
+const Activity = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.createElement("polyline", {
+  points: "22 12 18 12 15 21 9 3 6 12 2 12"
+}));
+const ClipboardList = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.createElement("rect", {
+  x: "8",
+  y: "2",
+  width: "8",
+  height: "4",
+  rx: "1"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "9",
+  y1: "12",
+  x2: "9.01",
+  y2: "12"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "9",
+  y1: "16",
+  x2: "9.01",
+  y2: "16"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "13",
+  y1: "12",
+  x2: "16",
+  y2: "12"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "13",
+  y1: "16",
+  x2: "16",
+  y2: "16"
+}));
+const LogOut = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.createElement("path", {
+  d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
+}), /*#__PURE__*/React.createElement("polyline", {
+  points: "16 17 21 12 16 7"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "21",
+  y1: "12",
+  x2: "9",
+  y2: "12"
+}));
+const Plus2 = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.createElement("line", {
+  x1: "12",
+  y1: "5",
+  x2: "12",
+  y2: "19"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "5",
+  y1: "12",
+  x2: "19",
+  y2: "12"
+}));
+
+/* ----------------------------- Temas ----------------------------- */
 const LIGHT = {
-  bg: "#EDF2F3",
+  bg: "#F2F0F7",
   surface: "#FFFFFF",
-  primary: "#0F3B44",
+  primary: "#453C7A",
   onPrimary: "#FFFFFF",
-  heading: "#0F3B44",
-  deep: "#0F3B44",
-  teal: "#2C7A7B",
-  tealSoft: "#DCEAE9",
-  amber: "#CF8340",
-  amberSoft: "#F6EAD9",
-  ink: "#17292C",
-  muted: "#5F7476",
-  line: "#DCE6E6",
-  input: "#F7FBFB",
-  track: "#E4EDED",
-  warn: "#B4552E",
-  shadow: "0 1px 3px rgba(15,59,68,0.07)"
+  heading: "#2C2748",
+  deep: "#2C2748",
+  teal: "#6C5CE0",
+  tealSoft: "#ECE9FB",
+  amber: "#E07A54",
+  amberSoft: "#FBEBE2",
+  good: "#2FA98C",
+  goodSoft: "#E1F3EE",
+  ink: "#272433",
+  muted: "#6E6A7C",
+  line: "#E7E3F0",
+  input: "#F8F7FC",
+  track: "#ECEAF4",
+  warn: "#C6553A",
+  shadow: "0 2px 12px rgba(44,39,72,0.07)"
 };
 const DARK = {
-  bg: "#0E1A1C",
-  surface: "#16272A",
-  primary: "#3E9E96",
-  onPrimary: "#06201E",
-  heading: "#E8F1F0",
-  deep: "#E8F1F0",
-  teal: "#5CB4AB",
-  tealSoft: "#1E393B",
-  amber: "#E0A05A",
-  amberSoft: "#33291B",
-  ink: "#E6F0EF",
-  muted: "#8CA2A3",
-  line: "#243A3D",
-  input: "#10211F",
-  track: "#1A2E31",
-  warn: "#E28A63",
-  shadow: "0 2px 8px rgba(0,0,0,0.35)"
+  bg: "#121022",
+  surface: "#1D1934",
+  primary: "#7C6FE8",
+  onPrimary: "#0E0B1C",
+  heading: "#EDEAFB",
+  deep: "#EDEAFB",
+  teal: "#9B8BFF",
+  tealSoft: "#2A2450",
+  amber: "#E89A72",
+  amberSoft: "#3A2A20",
+  good: "#4FC2A5",
+  goodSoft: "#1B3B34",
+  ink: "#E7E4F4",
+  muted: "#948FAE",
+  line: "#2C2750",
+  input: "#171331",
+  track: "#241F42",
+  warn: "#E8896B",
+  shadow: "0 3px 16px rgba(0,0,0,0.42)"
 };
 let C = LIGHT;
 function applyTheme(mode) {
@@ -576,6 +635,8 @@ try {
 } catch (e) {}
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 const SERIF = "ui-serif, Georgia, 'Times New Roman', serif";
+
+/* -------------------------- Armazenamento ------------------------ */
 let sb = null;
 let uid = null;
 let cache = {};
@@ -596,7 +657,7 @@ async function loadCore() {
     const {
       data,
       error
-    } = await sb.from("dados").select("chave,valor").in("chave", ["log:days", "log:strength"]);
+    } = await sb.from("dados").select("chave,valor").in("chave", ["log:days", "log:strength", "log:analyses"]);
     if (!error && data) data.forEach(r => {
       cache[r.chave] = r.valor;
     });
@@ -652,6 +713,8 @@ const store = {
     }
   }
 };
+
+/* ----------------------------- Helpers --------------------------- */
 function dayKey(d = new Date()) {
   const y = d.getFullYear(),
     m = String(d.getMonth() + 1).padStart(2, "0"),
@@ -670,8 +733,8 @@ function daysAgoKey(n) {
 }
 function sleepHours(bed, wake) {
   if (!bed || !wake) return null;
-  const [bh, bm] = bed.split(":").map(Number);
-  const [wh, wm] = wake.split(":").map(Number);
+  const [bh, bm] = bed.split(":").map(Number),
+    [wh, wm] = wake.split(":").map(Number);
   let start = bh * 60 + bm,
     end = wh * 60 + wm;
   if (end <= start) end += 24 * 60;
@@ -702,7 +765,7 @@ function readImage(file, maxDim = 1280, quality = 0.72) {
     img.src = url;
   });
 }
-function imgSize(dataURL) {
+function imgSize(u) {
   return new Promise(res => {
     const i = new Image();
     i.onload = () => res({
@@ -713,20 +776,138 @@ function imgSize(dataURL) {
       w: 1,
       h: 1
     });
-    i.src = dataURL;
+    i.src = u;
   });
-}
-function downloadDataUrl(d, n) {
-  const a = document.createElement("a");
-  a.href = d;
-  a.download = n;
-  a.click();
 }
 const avg = arr => {
   const v = arr.filter(x => x != null && !isNaN(x));
   return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
 };
 const r1 = x => x == null ? "—" : Math.round(x * 10) / 10;
+
+/* -------------------- Prontidão (readiness) ---------------------- */
+function readinessParts(m, baseHR) {
+  if (!m) return [];
+  const p = [];
+  if (m.sono != null) p.push({
+    k: "Sono curto",
+    s: Math.max(0, Math.min(m.sono / 8, 1)) * 100,
+    w: 0.28
+  });
+  if (m.qualidadeSono) p.push({
+    k: "Sono agitado",
+    s: m.qualidadeSono / 5 * 100,
+    w: 0.18
+  });
+  if (m.dores) p.push({
+    k: "Dores musculares",
+    s: (5 - m.dores) / 4 * 100,
+    w: 0.2
+  });
+  if (m.energia) p.push({
+    k: "Energia baixa",
+    s: m.energia / 5 * 100,
+    w: 0.17
+  });
+  if (m.humor) p.push({
+    k: "Humor em baixo",
+    s: m.humor / 5 * 100,
+    w: 0.1
+  });
+  if (m.fcRepouso && baseHR) p.push({
+    k: "FC acima do normal",
+    s: Math.max(0, Math.min(100, 100 - (m.fcRepouso - baseHR) * 6)),
+    w: 0.12
+  });
+  return p;
+}
+function readinessScore(m, baseHR) {
+  const p = readinessParts(m, baseHR);
+  if (!p.length) return null;
+  const ws = p.reduce((a, x) => a + x.w, 0);
+  return Math.round(p.reduce((a, x) => a + x.s * x.w, 0) / ws);
+}
+function readinessBand(score) {
+  if (score == null) return {
+    c: C.muted,
+    t: "Preenche a manhã para veres a tua prontidão",
+    sub: ""
+  };
+  if (score >= 80) return {
+    c: C.good,
+    t: "Prontidão ótima",
+    sub: "Corpo recuperado. Bom dia para treinar forte."
+  };
+  if (score >= 60) return {
+    c: C.teal,
+    t: "Boa prontidão",
+    sub: "Estás bem. Treina com normalidade."
+  };
+  if (score >= 40) return {
+    c: C.amber,
+    t: "Prontidão moderada",
+    sub: "Considera aliviar a intensidade e cuidar do sono."
+  };
+  return {
+    c: C.warn,
+    t: "Prontidão baixa",
+    sub: "O corpo está a pedir recuperação. Prioriza descanso."
+  };
+}
+function Ring({
+  value,
+  size = 116,
+  stroke = 12,
+  color
+}) {
+  const r = (size - stroke) / 2,
+    c = 2 * Math.PI * r,
+    off = c * (1 - (value || 0) / 100);
+  const cx = size / 2;
+  return /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: cx,
+    cy: cx,
+    r: r,
+    stroke: C.track,
+    strokeWidth: stroke,
+    fill: "none"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: cx,
+    cy: cx,
+    r: r,
+    stroke: color,
+    strokeWidth: stroke,
+    fill: "none",
+    strokeLinecap: "round",
+    strokeDasharray: c,
+    strokeDashoffset: off,
+    transform: `rotate(-90 ${cx} ${cx})`,
+    style: {
+      transition: "stroke-dashoffset .5s ease"
+    }
+  }), /*#__PURE__*/React.createElement("text", {
+    x: cx,
+    y: cx - 2,
+    textAnchor: "middle",
+    fontSize: "30",
+    fontWeight: "700",
+    fill: color,
+    fontFamily: FONT
+  }, value != null ? value : "–"), /*#__PURE__*/React.createElement("text", {
+    x: cx,
+    y: cx + 18,
+    textAnchor: "middle",
+    fontSize: "10.5",
+    fill: C.muted,
+    fontFamily: FONT,
+    letterSpacing: "1"
+  }, "/ 100"));
+}
+
+/* -------------------------- Componentes -------------------------- */
 function Sparkline({
   values,
   color,
@@ -900,6 +1081,28 @@ function TimeField({
     }
   }));
 }
+function TextInput({
+  value,
+  onChange,
+  placeholder
+}) {
+  return /*#__PURE__*/React.createElement("input", {
+    value: value,
+    onChange: e => onChange(e.target.value),
+    placeholder: placeholder,
+    style: {
+      width: "100%",
+      boxSizing: "border-box",
+      border: `1px solid ${C.line}`,
+      borderRadius: 12,
+      padding: "12px 14px",
+      fontSize: 16,
+      background: C.input,
+      color: C.ink,
+      fontFamily: FONT
+    }
+  });
+}
 function Card({
   children,
   style
@@ -1054,7 +1257,7 @@ function Gallery({
     style: {
       marginBottom: 16
     }
-  }, /*#__PURE__*/React.createElement("label", {
+  }, label && /*#__PURE__*/React.createElement("label", {
     style: {
       fontSize: 14,
       color: C.ink,
@@ -1101,7 +1304,7 @@ function Gallery({
       top: 5,
       right: 5,
       border: "none",
-      background: "rgba(10,20,22,0.7)",
+      background: "rgba(10,10,20,0.72)",
       color: "#fff",
       borderRadius: 16,
       width: 26,
@@ -1146,10 +1349,18 @@ function Gallery({
     }
   }));
 }
-function Tracker() {
+
+/* ------------------------------- App ----------------------------- */
+function Tracker({
+  theme,
+  onToggleTheme,
+  email,
+  onLogout
+}) {
   const [tab, setTab] = useState("diario");
   const [days, setDays] = useState({});
   const [strength, setStrength] = useState([]);
+  const [analyses, setAnalyses] = useState([]);
   const [images, setImages] = useState({});
   const [loaded, setLoaded] = useState(false);
   const [flash, setFlash] = useState("");
@@ -1157,28 +1368,36 @@ function Tracker() {
     (async () => {
       const d = await store.get("log:days");
       const s = await store.get("log:strength");
+      const a = await store.get("log:analyses");
       try {
         if (d) setDays(JSON.parse(d));
       } catch (e) {}
       try {
         if (s) setStrength(JSON.parse(s));
       } catch (e) {}
+      try {
+        if (a) setAnalyses(JSON.parse(a));
+      } catch (e) {}
       setLoaded(true);
     })();
   }, []);
-  const saveDays = async next => {
-    setDays(next);
-    await store.set("log:days", JSON.stringify(next));
+  const saveDays = async n => {
+    setDays(n);
+    await store.set("log:days", JSON.stringify(n));
   };
-  const saveStrength = async next => {
-    setStrength(next);
-    await store.set("log:strength", JSON.stringify(next));
+  const saveStrength = async n => {
+    setStrength(n);
+    await store.set("log:strength", JSON.stringify(n));
+  };
+  const saveAnalyses = async n => {
+    setAnalyses(n);
+    await store.set("log:analyses", JSON.stringify(n));
   };
   const loadImages = async ks => {
-    const missing = ks.filter(k => !(k in images));
-    if (!missing.length) return;
+    const miss = ks.filter(k => !(k in images));
+    if (!miss.length) return;
     const patch = {};
-    for (const k of missing) patch[k] = await store.get(k);
+    for (const k of miss) patch[k] = await store.get(k);
     setImages(p => ({
       ...p,
       ...patch
@@ -1221,6 +1440,10 @@ function Tracker() {
     label: "Físico",
     icon: LineChart
   }, {
+    id: "analises",
+    label: "Análises",
+    icon: ClipboardList
+  }, {
     id: "relatorio",
     label: "Relatório",
     icon: FileText
@@ -1230,8 +1453,11 @@ function Tracker() {
       minHeight: "100vh",
       background: C.bg,
       fontFamily: FONT,
-      color: C.ink,
-      paddingBottom: 40
+      color: C.ink
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: `linear-gradient(160deg, ${C.tealSoft} 0%, ${C.bg} 62%)`
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1241,32 +1467,35 @@ function Tracker() {
     }
   }, /*#__PURE__*/React.createElement("header", {
     style: {
-      padding: "26px 4px 14px"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
+      padding: "calc(env(safe-area-inset-top) + 18px) 4px 14px",
       display: "flex",
       alignItems: "center",
       gap: 12
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      width: 44,
-      height: 44,
-      borderRadius: 13,
-      background: C.tealSoft,
+      width: 46,
+      height: 46,
+      borderRadius: 14,
+      background: `linear-gradient(135deg, ${C.primary}, ${C.teal})`,
       display: "flex",
       alignItems: "center",
-      justifyContent: "center"
+      justifyContent: "center",
+      flexShrink: 0
     }
   }, /*#__PURE__*/React.createElement(Waves, {
     size: 24,
-    color: C.teal,
+    color: "#fff",
     strokeWidth: 2.2
-  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("h1", {
     style: {
       fontFamily: SERIF,
-      fontSize: 25,
+      fontSize: 23,
       color: C.heading,
       margin: 0,
       fontWeight: 600,
@@ -1275,44 +1504,33 @@ function Tracker() {
   }, "A minha recupera\xE7\xE3o"), /*#__PURE__*/React.createElement("p", {
     style: {
       margin: "2px 0 0",
-      fontSize: 12.5,
+      fontSize: 12,
       color: C.muted
     }
-  }, prettyDate(dayKey()))))), /*#__PURE__*/React.createElement("div", {
+  }, prettyDate(dayKey()))), /*#__PURE__*/React.createElement("button", {
+    onClick: onToggleTheme,
+    "aria-label": "Tema",
+    style: ctrlBtn()
+  }, theme === "dark" ? /*#__PURE__*/React.createElement(Sun, {
+    size: 18,
+    color: C.teal
+  }) : /*#__PURE__*/React.createElement(Moon, {
+    size: 18,
+    color: C.teal
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: onLogout,
+    "aria-label": "Sair",
+    style: ctrlBtn()
+  }, /*#__PURE__*/React.createElement(LogOut, {
+    size: 17,
+    color: C.muted
+  }))))), /*#__PURE__*/React.createElement("div", {
     style: {
-      display: "flex",
-      gap: 6,
-      background: C.track,
-      padding: 5,
-      borderRadius: 14,
-      marginBottom: 18
+      maxWidth: 560,
+      margin: "0 auto",
+      padding: "8px 16px 110px"
     }
-  }, tabs.map(t => {
-    const active = tab === t.id;
-    const Icon = t.icon;
-    return /*#__PURE__*/React.createElement("button", {
-      key: t.id,
-      onClick: () => setTab(t.id),
-      style: {
-        flex: 1,
-        padding: "9px 4px",
-        borderRadius: 10,
-        border: "none",
-        cursor: "pointer",
-        background: active ? C.surface : "transparent",
-        color: active ? C.heading : C.muted,
-        fontWeight: active ? 700 : 500,
-        fontSize: 12.5,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 4,
-        boxShadow: active ? C.shadow : "none"
-      }
-    }, /*#__PURE__*/React.createElement(Icon, {
-      size: 17
-    }), " ", t.label);
-  })), !loaded ? /*#__PURE__*/React.createElement("p", {
+  }, !loaded ? /*#__PURE__*/React.createElement("p", {
     style: {
       color: C.muted,
       textAlign: "center",
@@ -1332,22 +1550,82 @@ function Tracker() {
     saveDays: saveDays,
     flash: showFlash,
     img: imgApi
+  }), tab === "analises" && /*#__PURE__*/React.createElement(Analises, {
+    analyses: analyses,
+    saveAnalyses: saveAnalyses,
+    flash: showFlash,
+    img: imgApi
   }), tab === "relatorio" && /*#__PURE__*/React.createElement(Relatorio, {
     days: days,
     strength: strength,
+    analyses: analyses,
     flash: showFlash
   })), /*#__PURE__*/React.createElement("p", {
     style: {
       fontSize: 11,
       color: C.muted,
       textAlign: "center",
-      marginTop: 28,
+      marginTop: 24,
       lineHeight: 1.5
     }
-  }, "Ferramenta de acompanhamento pessoal. N\xE3o substitui os teus m\xE9dicos.")), flash && /*#__PURE__*/React.createElement("div", {
+  }, "Sess\xE3o: ", email, " \xB7 Ferramenta de acompanhamento pessoal. N\xE3o substitui os teus m\xE9dicos.")), /*#__PURE__*/React.createElement("nav", {
     style: {
       position: "fixed",
-      bottom: 22,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 40,
+      background: C.surface,
+      borderTop: `1px solid ${C.line}`,
+      boxShadow: "0 -2px 14px rgba(0,0,0,0.06)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 560,
+      margin: "0 auto",
+      display: "flex",
+      padding: "8px 6px calc(env(safe-area-inset-bottom) + 8px)"
+    }
+  }, tabs.map(t => {
+    const active = tab === t.id;
+    const Icon = t.icon;
+    return /*#__PURE__*/React.createElement("button", {
+      key: t.id,
+      onClick: () => setTab(t.id),
+      style: {
+        flex: 1,
+        border: "none",
+        background: "transparent",
+        cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 4,
+        padding: "4px 0",
+        color: active ? C.teal : C.muted
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 42,
+        height: 30,
+        borderRadius: 10,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: active ? C.tealSoft : "transparent"
+      }
+    }, /*#__PURE__*/React.createElement(Icon, {
+      size: 19
+    })), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 10.5,
+        fontWeight: active ? 700 : 500
+      }
+    }, t.label));
+  }))), flash && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      bottom: "calc(env(safe-area-inset-bottom) + 82px)",
       left: "50%",
       transform: "translateX(-50%)",
       background: C.primary,
@@ -1358,12 +1636,15 @@ function Tracker() {
       display: "flex",
       alignItems: "center",
       gap: 7,
-      boxShadow: "0 4px 14px rgba(0,0,0,0.25)"
+      boxShadow: "0 4px 14px rgba(0,0,0,0.28)",
+      zIndex: 60
     }
   }, /*#__PURE__*/React.createElement(Check, {
     size: 15
   }), " ", flash));
 }
+
+/* ----------------------------- DIÁRIO ---------------------------- */
 function Diario({
   days,
   saveDays,
@@ -1384,6 +1665,20 @@ function Diario({
     [k]: v
   }));
   const horas = sleepHours(f.deitar, f.acordar);
+  const baseHR = useMemo(() => {
+    const hrs = Object.keys(days).filter(k => k !== key).slice(-21).map(k => days[k]?.morning?.fcRepouso).filter(x => x != null);
+    return hrs.length ? avg(hrs) : null;
+  }, [days]); // eslint-disable-line
+  const liveMorning = mode === "manha" ? {
+    ...f,
+    sono: horas
+  } : today.morning;
+  const score = readinessScore(liveMorning, baseHR);
+  const band = readinessBand(score);
+  const limiter = (() => {
+    const p = readinessParts(liveMorning, baseHR).filter(x => x.s < 55).sort((a, b) => a.s - b.s)[0];
+    return p ? p.k : null;
+  })();
   const save = () => {
     const payload = mode === "manha" ? {
       ...f,
@@ -1416,8 +1711,94 @@ function Diario({
     flash("Registo apagado");
   };
   const recent = Object.keys(days).sort().reverse().slice(0, 7);
+  const readySeries = recent.slice().reverse().map(k => readinessScore(days[k]?.morning, baseHR));
   const sleepSeries = recent.slice().reverse().map(k => days[k]?.morning?.sono);
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginBottom: 18,
+      background: `linear-gradient(155deg, ${C.surface}, ${band.c}14)`
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 18
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement(Ring, {
+    value: score,
+    color: band.c
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 4
+    }
+  }, /*#__PURE__*/React.createElement(Activity, {
+    size: 15,
+    color: band.c
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      fontWeight: 700,
+      color: band.c,
+      textTransform: "uppercase",
+      letterSpacing: 0.6
+    }
+  }, "Prontid\xE3o")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontFamily: SERIF,
+      fontSize: 18,
+      color: C.heading,
+      fontWeight: 600,
+      marginBottom: 4
+    }
+  }, band.t), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12.5,
+      color: C.muted,
+      margin: 0,
+      lineHeight: 1.5
+    }
+  }, band.sub), limiter && /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: "inline-block",
+      marginTop: 8,
+      fontSize: 11.5,
+      fontWeight: 600,
+      color: C.warn,
+      background: C.amberSoft,
+      padding: "3px 10px",
+      borderRadius: 20
+    }
+  }, "A puxar para baixo: ", limiter))), readySeries.filter(x => x != null).length > 1 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginTop: 14,
+      paddingTop: 14,
+      borderTop: `1px solid ${C.line}`
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11.5,
+      color: C.muted
+    }
+  }, "\xDAltimos dias"), /*#__PURE__*/React.createElement(Sparkline, {
+    values: readySeries,
+    color: band.c,
+    w: 150,
+    h: 30
+  }))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -1438,7 +1819,7 @@ function Diario({
       size: 18,
       color: C.teal
     }),
-    hint: "Como acordaste hoje. Anexa o(s) print(s) dos batimentos do teu sensor da noite."
+    hint: "Como acordaste hoje. Anexa o(s) print(s) dos batimentos do sensor durante a noite."
   }, "Ao acordar"), /*#__PURE__*/React.createElement("label", {
     style: {
       fontSize: 14,
@@ -1487,7 +1868,7 @@ function Diario({
     value: f.fcRepouso,
     onChange: v => set("fcRepouso", v),
     unit: "bpm",
-    placeholder: "s\xF3 se quiseres um n\xFAmero"
+    placeholder: "alimenta a prontid\xE3o"
   }), /*#__PURE__*/React.createElement(Scale, {
     label: "Energia agora",
     value: f.energia,
@@ -1611,6 +1992,7 @@ function Diario({
     h: 30
   })), recent.map(k => {
     const m = days[k]?.morning || {};
+    const rs = readinessScore(m, baseHR);
     return /*#__PURE__*/React.createElement("div", {
       key: k,
       style: {
@@ -1627,26 +2009,33 @@ function Diario({
         fontWeight: 600,
         flex: 1
       }
-    }, prettyDate(k)), /*#__PURE__*/React.createElement("span", {
+    }, prettyDate(k)), rs != null && /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: readinessBand(rs).c,
+        background: C.track,
+        borderRadius: 20,
+        padding: "2px 9px"
+      }
+    }, rs), /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: 12.5,
         color: C.muted,
-        fontVariantNumeric: "tabular-nums"
+        fontVariantNumeric: "tabular-nums",
+        width: 34,
+        textAlign: "right"
       }
     }, m.sono != null ? `${m.sono}h` : "—"), /*#__PURE__*/React.createElement("button", {
       onClick: () => delDay(k),
-      style: {
-        border: "none",
-        background: "transparent",
-        color: C.muted,
-        cursor: "pointer",
-        display: "flex"
-      }
+      style: iconBtn()
     }, /*#__PURE__*/React.createElement(Trash2, {
       size: 15
     })));
   })));
 }
+
+/* ------------------------------ FORÇA ---------------------------- */
 const EXERCICIOS = ["Supino", "Agachamento", "Peso morto", "Remada", "Puxada", "Desenvolvimento ombros", "Elevações", "Prensa de pernas", "Rosca bíceps", "Core / prancha"];
 function MiniNum({
   label,
@@ -1864,19 +2253,14 @@ function Forca({
       }
     })), /*#__PURE__*/React.createElement("button", {
       onClick: () => del(s.id),
-      style: {
-        border: "none",
-        background: "transparent",
-        cursor: "pointer",
-        color: C.muted,
-        display: "flex",
-        flexShrink: 0
-      }
+      style: iconBtn()
     }, /*#__PURE__*/React.createElement(Trash2, {
       size: 15
     })))));
   }));
 }
+
+/* ------------------------------ FÍSICO --------------------------- */
 function Fisico({
   days,
   saveDays,
@@ -2032,18 +2416,307 @@ function Fisico({
       }
     }, delta > 0 ? "+" : "", delta)), /*#__PURE__*/React.createElement("button", {
       onClick: () => delBody(k),
-      style: {
-        border: "none",
-        background: "transparent",
-        color: C.muted,
-        cursor: "pointer",
-        display: "flex"
-      }
+      style: iconBtn()
     }, /*#__PURE__*/React.createElement(Trash2, {
       size: 15
     })));
   })));
 }
+
+/* ----------------------------- ANÁLISES -------------------------- */
+const TIPOS = ["Sangue", "Urina", "Imagem/Eco", "Avaliação médica", "Outro"];
+function Analises({
+  analyses,
+  saveAnalyses,
+  flash,
+  img
+}) {
+  const [tipo, setTipo] = useState("Sangue");
+  const [date, setDate] = useState(dayKey());
+  const [notas, setNotas] = useState("");
+  const [params, setParams] = useState([]);
+  const [draftId, setDraftId] = useState(() => "a" + Date.now());
+  const addRow = () => setParams(p => [...p, {
+    n: "",
+    v: "",
+    u: ""
+  }]);
+  const setRow = (i, k, v) => setParams(p => p.map((r, j) => j === i ? {
+    ...r,
+    [k]: v
+  } : r));
+  const delRow = i => setParams(p => p.filter((_, j) => j !== i));
+  const save = () => {
+    const clean = params.filter(p => p.n.trim());
+    saveAnalyses([{
+      id: draftId,
+      date,
+      tipo,
+      notas: notas.trim(),
+      params: clean,
+      at: new Date().toISOString()
+    }, ...analyses]);
+    setTipo("Sangue");
+    setDate(dayKey());
+    setNotas("");
+    setParams([]);
+    setDraftId("a" + Date.now());
+    flash("Análise guardada");
+  };
+  const del = async a => {
+    if (!window.confirm("Apagar esta análise/avaliação?")) return;
+    const ks = await store.list("img:analise:" + a.id + ":");
+    for (const k of ks) await img.delImage(k);
+    saveAnalyses(analyses.filter(x => x.id !== a.id));
+    flash("Apagada");
+  };
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(ClipboardList, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Guarda aqui an\xE1lises ao sangue, exames ou avalia\xE7\xF5es m\xE9dicas \u2014 com fotos do documento e os valores que quiseres seguir ao longo do tempo."
+  }, "Nova an\xE1lise / avalia\xE7\xE3o"), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 14,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 8
+    }
+  }, "Tipo"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 16
+    }
+  }, TIPOS.map(o => /*#__PURE__*/React.createElement("button", {
+    key: o,
+    onClick: () => setTipo(o),
+    style: chip(tipo === o)
+  }, o))), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 14,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Data"), /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: date,
+    onChange: e => setDate(e.target.value),
+    style: {
+      width: "100%",
+      boxSizing: "border-box",
+      border: `1px solid ${C.line}`,
+      borderRadius: 12,
+      padding: "12px 14px",
+      fontSize: 16,
+      background: C.input,
+      color: C.ink,
+      fontFamily: FONT,
+      marginBottom: 16
+    }
+  }), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 14,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 4
+    }
+  }, "Valores a seguir (opcional)"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11.5,
+      color: C.muted,
+      margin: "0 0 10px",
+      lineHeight: 1.5
+    }
+  }, "Ex.: Ferritina \xB7 45 \xB7 ng/mL. \xDAteis para acompanhar marcadores ao longo do tempo."), params.map((r, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: "flex",
+      gap: 6,
+      marginBottom: 8,
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 2,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement(TextInput, {
+    value: r.n,
+    onChange: v => setRow(i, "n", v),
+    placeholder: "Par\xE2metro"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement(TextInput, {
+    value: r.v,
+    onChange: v => setRow(i, "v", v),
+    placeholder: "Valor"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement(TextInput, {
+    value: r.u,
+    onChange: v => setRow(i, "u", v),
+    placeholder: "Un."
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: () => delRow(i),
+    style: iconBtn()
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 16
+  })))), /*#__PURE__*/React.createElement("button", {
+    onClick: addRow,
+    style: {
+      border: `1px dashed ${C.teal}`,
+      background: C.tealSoft,
+      color: C.teal,
+      borderRadius: 12,
+      padding: "9px 14px",
+      fontSize: 13,
+      fontWeight: 600,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement(Plus, {
+    size: 15
+  }), " Adicionar valor"), /*#__PURE__*/React.createElement(Gallery, {
+    prefix: "img:analise",
+    dk: draftId,
+    img: img,
+    label: "Fotos do documento",
+    hint: "Fotografa as folhas dos resultados. Podes juntar v\xE1rias."
+  }), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 14,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Notas"), /*#__PURE__*/React.createElement("textarea", {
+    value: notas,
+    onChange: e => setNotas(e.target.value),
+    rows: 2,
+    placeholder: "Contexto, quem pediu, o que o m\xE9dico disse\u2026",
+    style: {
+      width: "100%",
+      border: `1px solid ${C.line}`,
+      borderRadius: 12,
+      padding: 12,
+      fontSize: 15,
+      fontFamily: FONT,
+      resize: "vertical",
+      background: C.input,
+      color: C.ink,
+      boxSizing: "border-box",
+      marginBottom: 16
+    }
+  }), /*#__PURE__*/React.createElement(PrimaryBtn, {
+    onClick: save
+  }, /*#__PURE__*/React.createElement(Check, {
+    size: 17
+  }), " Guardar an\xE1lise")), analyses.length === 0 ? /*#__PURE__*/React.createElement(Empty, null, "Ainda n\xE3o guardaste an\xE1lises. Cria a primeira acima \u2014 depois \xE9 s\xF3 juntar fotos e valores.") : analyses.map(a => /*#__PURE__*/React.createElement(Card, {
+    key: a.id,
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: 10,
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      background: C.tealSoft,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement(ClipboardList, {
+    size: 17,
+    color: C.teal
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15.5,
+      color: C.heading,
+      fontWeight: 700
+    }
+  }, a.tipo), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: C.muted
+    }
+  }, prettyDate(a.date))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => del(a),
+    style: iconBtn()
+  }, /*#__PURE__*/React.createElement(Trash2, {
+    size: 16
+  }))), a.params && a.params.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 12
+    }
+  }, a.params.map((p, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      padding: "6px 0",
+      borderTop: i ? `1px solid ${C.line}` : "none",
+      fontSize: 13.5
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: C.muted
+    }
+  }, p.n), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: C.ink,
+      fontWeight: 600,
+      fontVariantNumeric: "tabular-nums"
+    }
+  }, p.v, p.u ? ` ${p.u}` : "")))), a.notas && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: C.ink,
+      margin: "0 0 12px",
+      lineHeight: 1.5,
+      background: C.input,
+      padding: "10px 12px",
+      borderRadius: 10
+    }
+  }, a.notas), /*#__PURE__*/React.createElement(Gallery, {
+    prefix: "img:analise",
+    dk: a.id,
+    img: img,
+    hint: "Fotos deste documento \u2014 podes juntar mais ou remover."
+  }))));
+}
+
+/* ---------------------------- RELATÓRIO -------------------------- */
 async function gatherImages(prefix) {
   const keys = await store.list(prefix + ":");
   const byDay = {};
@@ -2055,16 +2728,23 @@ async function gatherImages(prefix) {
   }
   return byDay;
 }
-function textReport(days, strength) {
+async function imagesFor(idPrefix) {
+  const keys = (await store.list(idPrefix)).sort();
+  const out = [];
+  for (const k of keys) {
+    const u = await store.get(k);
+    if (u) out.push(u);
+  }
+  return out;
+}
+function textReport(days, strength, analyses) {
   const keys = Object.keys(days).filter(k => k >= daysAgoKey(14)).sort();
   const L = ["RELATÓRIO DE RECUPERAÇÃO — Guilherme Novais", `Últimos 14 dias (até ${prettyDate(dayKey())})`, ""];
-  if (!keys.length) {
-    L.push("Sem registos neste período.");
-    return L.join("\n");
+  if (keys.length) {
+    const M = keys.map(k => days[k].morning).filter(Boolean);
+    L.push(`Sono médio: ${r1(avg(M.map(m => m.sono)))} h · Qualidade: ${r1(avg(M.map(m => m.qualidadeSono)))}/5`);
+    L.push(`Energia: ${r1(avg(M.map(m => m.energia)))}/5 · Humor: ${r1(avg(M.map(m => m.humor)))}/5 · Dores: ${r1(avg(M.map(m => m.dores)))}/5`);
   }
-  const M = keys.map(k => days[k].morning).filter(Boolean);
-  L.push(`Sono médio: ${r1(avg(M.map(m => m.sono)))} h · Qualidade: ${r1(avg(M.map(m => m.qualidadeSono)))}/5`);
-  L.push(`Energia: ${r1(avg(M.map(m => m.energia)))}/5 · Humor: ${r1(avg(M.map(m => m.humor)))}/5 · Dores: ${r1(avg(M.map(m => m.dores)))}/5`);
   if (strength.length) {
     const g = {};
     strength.forEach(s => {
@@ -2072,10 +2752,11 @@ function textReport(days, strength) {
     });
     L.push("Recordes: " + Object.entries(g).map(([n, v]) => `${n} ${v}kg`).join(", "));
   }
+  if (analyses && analyses.length) L.push(`Análises guardadas: ${analyses.length}`);
   L.push("", "(PDF completo com tabelas e imagens em anexo.)");
   return L.join("\n");
 }
-async function generatePdf(days, strength) {
+async function generatePdf(days, strength, analyses) {
   if (!window.jspdf || !window.jspdf.jsPDF) {
     alert("A carregar o gerador de PDF — tenta outra vez daqui a instantes.");
     return;
@@ -2090,11 +2771,11 @@ async function generatePdf(days, strength) {
   const W = doc.internal.pageSize.getWidth(),
     H = doc.internal.pageSize.getHeight(),
     M = 40;
-  const deep = [15, 59, 68],
-    teal = [44, 122, 123],
-    ink = [30, 45, 48],
-    muted = [110, 128, 130];
-  doc.setFillColor(deep[0], deep[1], deep[2]);
+  const primary = [69, 60, 122],
+    accent = [108, 92, 224],
+    ink = [39, 36, 51],
+    muted = [110, 106, 124];
+  doc.setFillColor(primary[0], primary[1], primary[2]);
   doc.rect(0, 0, W, 84, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
@@ -2102,11 +2783,12 @@ async function generatePdf(days, strength) {
   doc.text("Relatório de Recuperação", M, 42);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
-  doc.setTextColor(205, 226, 225);
-  doc.text("Guilherme Novais · últimos 14 dias · até " + prettyDate(dayKey()), M, 63);
+  doc.setTextColor(214, 208, 240);
+  doc.text("Guilherme Novais · até " + prettyDate(dayKey()), M, 63);
   const keys = Object.keys(days).filter(k => k >= daysAgoKey(14)).sort();
   const Ms = keys.map(k => days[k].morning).filter(Boolean);
   const Es = keys.map(k => days[k].evening).filter(Boolean);
+  const baseHR = avg(Object.keys(days).map(k => days[k]?.morning?.fcRepouso));
   let y = 104;
   const table = (title, body) => {
     doc.autoTable({
@@ -2115,7 +2797,7 @@ async function generatePdf(days, strength) {
       body,
       theme: "grid",
       headStyles: {
-        fillColor: teal,
+        fillColor: accent,
         textColor: 255,
         fontStyle: "bold",
         fontSize: 10.5
@@ -2124,11 +2806,11 @@ async function generatePdf(days, strength) {
         fontSize: 9.5,
         cellPadding: 5,
         textColor: ink,
-        lineColor: [220, 230, 230]
+        lineColor: [230, 226, 240]
       },
       columnStyles: {
         0: {
-          cellWidth: 170,
+          cellWidth: 175,
           textColor: muted,
           fontStyle: "bold"
         }
@@ -2140,8 +2822,51 @@ async function generatePdf(days, strength) {
     });
     y = doc.lastAutoTable.finalY + 16;
   };
+  const bar = label => {
+    if (y > H - 120) {
+      doc.addPage();
+      y = M;
+    }
+    doc.setFillColor(accent[0], accent[1], accent[2]);
+    doc.roundedRect(M, y, W - 2 * M, 22, 4, 4, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text(label, M + 10, y + 15);
+    y += 30;
+  };
+  const drawImages = async imgs => {
+    if (!imgs.length) return;
+    const perRow = 3,
+      gap = 10,
+      tw = (W - 2 * M - (perRow - 1) * gap) / perRow,
+      maxH = 150;
+    for (let i = 0; i < imgs.length; i += perRow) {
+      const row = imgs.slice(i, i + perRow),
+        sizes = await Promise.all(row.map(imgSize));
+      const draws = sizes.map(s => {
+        const sc = Math.min(tw / s.w, maxH / s.h);
+        return {
+          dw: s.w * sc,
+          dh: s.h * sc
+        };
+      });
+      const rowH = Math.max.apply(null, draws.map(d => d.dh));
+      if (y + rowH > H - M) {
+        doc.addPage();
+        y = M;
+      }
+      row.forEach((url, j) => {
+        try {
+          doc.addImage(url, "JPEG", M + j * (tw + gap) + (tw - draws[j].dw) / 2, y, draws[j].dw, draws[j].dh);
+        } catch (er) {}
+      });
+      y += rowH + gap;
+    }
+  };
+  const rdy = Ms.map(m => readinessScore(m, baseHR)).filter(x => x != null);
   const noites = Ms.map(m => m.sono).filter(s => s != null && s < 7.5).length;
-  table("Sono e recuperação", [["Dias registados", `${keys.length} / 14`], ["Sono médio", `${r1(avg(Ms.map(m => m.sono)))} h  (noites < 7,5h: ${noites})`], ["Qualidade do sono", `${r1(avg(Ms.map(m => m.qualidadeSono)))} / 5`], ["FC de repouso média", `${r1(avg(Ms.map(m => m.fcRepouso)))} bpm`], ["Energia média", `${r1(avg(Ms.map(m => m.energia)))} / 5`], ["Humor médio", `${r1(avg(Ms.map(m => m.humor)))} / 5`], ["Dores médias", `${r1(avg(Ms.map(m => m.dores)))} / 5`], ["Apetite médio", `${r1(avg(Ms.map(m => m.apetite)))} / 5`]]);
+  table("Sono e recuperação", [["Dias registados", `${keys.length} / 14`], ["Prontidão média", rdy.length ? `${r1(avg(rdy))} / 100` : "—"], ["Sono médio", `${r1(avg(Ms.map(m => m.sono)))} h  (noites < 7,5h: ${noites})`], ["Qualidade do sono", `${r1(avg(Ms.map(m => m.qualidadeSono)))} / 5`], ["FC de repouso média", `${r1(avg(Ms.map(m => m.fcRepouso)))} bpm`], ["Energia média", `${r1(avg(Ms.map(m => m.energia)))} / 5`], ["Humor médio", `${r1(avg(Ms.map(m => m.humor)))} / 5`], ["Dores médias", `${r1(avg(Ms.map(m => m.dores)))} / 5`]]);
   if (Es.length) {
     const cont = {};
     Es.forEach(e => {
@@ -2165,31 +2890,90 @@ async function generatePdf(days, strength) {
     });
     table("Força — recordes", Object.entries(g).map(([n, v]) => [n, `${v} kg`]));
   }
+
+  // Análises
+  const recentA = (analyses || []).filter(a => a.date >= daysAgoKey(90)).sort((a, b) => a.date < b.date ? 1 : -1);
+  if (recentA.length) {
+    bar("Análises e avaliações");
+    for (const a of recentA) {
+      if (y > H - 120) {
+        doc.addPage();
+        y = M;
+      }
+      doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text(`${a.tipo} · ${prettyDate(a.date)}`, M, y + 4);
+      y += 14;
+      if (a.params && a.params.length) {
+        doc.autoTable({
+          startY: y,
+          head: [["Parâmetro", "Valor"]],
+          body: a.params.map(p => [p.n, `${p.v}${p.u ? " " + p.u : ""}`]),
+          theme: "striped",
+          headStyles: {
+            fillColor: [230, 226, 240],
+            textColor: ink,
+            fontStyle: "bold",
+            fontSize: 9.5
+          },
+          styles: {
+            fontSize: 9.5,
+            cellPadding: 4,
+            textColor: ink
+          },
+          margin: {
+            left: M,
+            right: M
+          }
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+      if (a.notas) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(muted[0], muted[1], muted[2]);
+        const lines = doc.splitTextToSize(a.notas, W - 2 * M);
+        if (y + lines.length * 12 > H - M) {
+          doc.addPage();
+          y = M;
+        }
+        doc.text(lines, M, y + 4);
+        y += lines.length * 12 + 6;
+      }
+      await drawImages(await imagesFor("img:analise:" + a.id + ":"));
+      y += 10;
+    }
+  }
+
+  // Dia a dia
   const hrByDay = await gatherImages("img:hr"),
     fisByDay = await gatherImages("img:fisico");
+  bar("Dia a dia");
   const dkeys = keys.slice().reverse();
   for (const k of dkeys) {
-    if (y > H - 130) {
+    if (y > H - 120) {
       doc.addPage();
       y = M;
     }
-    doc.setFillColor(teal[0], teal[1], teal[2]);
-    doc.roundedRect(M, y, W - 2 * M, 22, 4, 4, "F");
+    doc.setFillColor(accent[0], accent[1], accent[2]);
+    doc.roundedRect(M, y, W - 2 * M, 20, 4, 4, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text(prettyDate(k), M + 10, y + 15);
-    y += 30;
+    doc.setFontSize(10.5);
+    doc.text(prettyDate(k), M + 10, y + 14);
+    y += 28;
     const m = days[k].morning || {},
       e = days[k].evening || {},
       b = days[k].body || {},
       rows = [];
+    const rs = readinessScore(m, baseHR);
+    if (rs != null) rows.push(["Prontidão", `${rs}/100`]);
     if (m.sono != null) rows.push(["Sono", `${m.sono} h${m.qualidadeSono ? ` · qualidade ${m.qualidadeSono}/5` : ""}`]);
     if (m.fcRepouso) rows.push(["FC repouso", `${m.fcRepouso} bpm`]);
     if (m.energia) rows.push(["Energia", `${m.energia}/5`]);
     if (m.humor) rows.push(["Humor", `${m.humor}/5`]);
     if (m.dores) rows.push(["Dores", `${m.dores}/5`]);
-    if (m.apetite) rows.push(["Apetite", `${m.apetite}/5`]);
     if (e.treino) rows.push(["Treino", `${e.treino}${e.rpe ? ` · RPE ${e.rpe}/10` : ""}`]);
     if (e.dor) rows.push(["Dor/lesão", e.dor]);
     if (b.peso != null) rows.push(["Peso", `${b.peso} kg${b.gordura ? ` · ${b.gordura}%` : ""}`]);
@@ -2218,54 +3002,27 @@ async function generatePdf(days, strength) {
       });
       y = doc.lastAutoTable.finalY + 8;
     }
-    const imgs = [...(fisByDay[k] || []), ...(hrByDay[k] || [])];
-    if (imgs.length) {
-      const perRow = 3,
-        gap = 10,
-        tw = (W - 2 * M - (perRow - 1) * gap) / perRow,
-        maxH = 150;
-      for (let i = 0; i < imgs.length; i += perRow) {
-        const row = imgs.slice(i, i + perRow),
-          sizes = await Promise.all(row.map(imgSize));
-        const draws = sizes.map(s => {
-          const sc = Math.min(tw / s.w, maxH / s.h);
-          return {
-            dw: s.w * sc,
-            dh: s.h * sc
-          };
-        });
-        const rowH = Math.max.apply(null, draws.map(d => d.dh));
-        if (y + rowH > H - M) {
-          doc.addPage();
-          y = M;
-        }
-        row.forEach((url, j) => {
-          try {
-            doc.addImage(url, "JPEG", M + j * (tw + gap) + (tw - draws[j].dw) / 2, y, draws[j].dw, draws[j].dh);
-          } catch (er) {}
-        });
-        y += rowH + gap;
-      }
-    }
+    await drawImages([...(fisByDay[k] || []), ...(hrByDay[k] || [])]);
     y += 8;
   }
-  if (!keys.length) {
+  if (!keys.length && !recentA.length) {
     doc.setTextColor(muted[0], muted[1], muted[2]);
     doc.setFontSize(11);
-    doc.text("Sem registos nos últimos 14 dias.", M, y + 10);
+    doc.text("Sem registos ainda.", M, y + 10);
   }
   doc.save("relatorio_" + dayKey() + ".pdf");
 }
 function Relatorio({
   days,
   strength,
+  analyses,
   flash
 }) {
   const [busy, setBusy] = useState(false);
   const doPdf = async () => {
     setBusy(true);
     try {
-      await generatePdf(days, strength);
+      await generatePdf(days, strength, analyses);
       flash("PDF gerado");
     } catch (e) {
       alert("Não consegui gerar o PDF.");
@@ -2274,7 +3031,7 @@ function Relatorio({
   };
   const copyTxt = async () => {
     try {
-      await navigator.clipboard.writeText(textReport(days, strength));
+      await navigator.clipboard.writeText(textReport(days, strength, analyses));
       flash("Resumo copiado");
     } catch (e) {
       flash("Não consegui copiar");
@@ -2285,8 +3042,8 @@ function Relatorio({
       size: 18,
       color: C.teal
     }),
-    hint: "Gera um PDF com tabelas e as fotos de cada dia. Podes enviar-mo aqui no chat para eu avaliar."
-  }, "Relat\xF3rio dos \xFAltimos 14 dias"), /*#__PURE__*/React.createElement("div", {
+    hint: "Gera um PDF com tabelas, an\xE1lises e as fotos de cada dia. Podes enviar-mo aqui no chat para eu avaliar."
+  }, "Relat\xF3rio"), /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 12
     }
@@ -2306,8 +3063,10 @@ function Relatorio({
       marginTop: 16,
       lineHeight: 1.55
     }
-  }, "O PDF inclui as m\xE9dias, os recordes de for\xE7a e, dia a dia, os teus registos com as respetivas fotos e prints. Envia-mo na conversa do projeto Sa\xFAde para eu acompanhar a evolu\xE7\xE3o com o teu historial completo.")));
+  }, "Inclui m\xE9dias, prontid\xE3o, recordes de for\xE7a, as tuas an\xE1lises e, dia a dia, os registos com as respetivas fotos e prints. Envia-mo na conversa do projeto Sa\xFAde para eu acompanhar a evolu\xE7\xE3o com o teu historial completo.")));
 }
+
+/* --------------------------- Estilos util ------------------------ */
 function pill(active) {
   return {
     flex: 1,
@@ -2335,6 +3094,31 @@ function chip(active) {
     fontWeight: 600,
     fontSize: 13.5,
     cursor: "pointer"
+  };
+}
+function iconBtn() {
+  return {
+    border: "none",
+    background: "transparent",
+    color: C.muted,
+    cursor: "pointer",
+    display: "flex",
+    flexShrink: 0,
+    padding: 4
+  };
+}
+function ctrlBtn() {
+  return {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    border: `1px solid ${C.line}`,
+    background: C.surface,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0
   };
 }
 
@@ -2385,17 +3169,17 @@ function AuthShell({
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      width: 52,
-      height: 52,
-      borderRadius: 15,
-      background: C.tealSoft,
+      width: 54,
+      height: 54,
+      borderRadius: 16,
+      background: `linear-gradient(135deg, ${C.primary}, ${C.teal})`,
       display: "flex",
       alignItems: "center",
       justifyContent: "center"
     }
   }, /*#__PURE__*/React.createElement(Waves, {
     size: 28,
-    color: C.teal,
+    color: "#fff",
     strokeWidth: 2.2
   }))), /*#__PURE__*/React.createElement("h1", {
     style: {
@@ -2666,7 +3450,7 @@ function Login({
     busy: busy
   }, mode === "criar" ? "Criar conta" : "Entrar"));
 }
-function ThemeToggle({
+function FloatingToggle({
   theme,
   onToggle
 }) {
@@ -2756,38 +3540,21 @@ function Root() {
       setPhase("login");
     })();
   }, []);
+  if (phase === "ready") return /*#__PURE__*/React.createElement(Tracker, {
+    theme: theme,
+    onToggleTheme: toggleTheme,
+    email: email,
+    onLogout: logout
+  });
   let content;
   if (phase === "loading") content = /*#__PURE__*/React.createElement(Splash, {
     text: "A ligar \xE0 tua nuvem\u2026"
   });else if (phase === "setup") content = /*#__PURE__*/React.createElement(CloudSetup, {
     onDone: () => setPhase("login")
-  });else if (phase === "login") content = /*#__PURE__*/React.createElement(Login, {
+  });else content = /*#__PURE__*/React.createElement(Login, {
     onAuthed: enter
-  });else content = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Tracker, null), /*#__PURE__*/React.createElement("div", {
-    style: {
-      maxWidth: 560,
-      margin: "0 auto",
-      padding: "0 16px 34px",
-      textAlign: "center"
-    }
-  }, /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 12,
-      color: C.muted
-    }
-  }, "Sess\xE3o: ", email, " \xB7 ", /*#__PURE__*/React.createElement("button", {
-    onClick: logout,
-    style: {
-      border: "none",
-      background: "transparent",
-      color: C.teal,
-      fontWeight: 600,
-      cursor: "pointer",
-      fontSize: 12,
-      padding: 0
-    }
-  }, "Sair"))));
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ThemeToggle, {
+  });
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(FloatingToggle, {
     theme: theme,
     onToggle: toggleTheme
   }), content);
