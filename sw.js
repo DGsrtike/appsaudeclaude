@@ -1,5 +1,5 @@
 /* Service worker — «A minha recuperação» */
-const VERSAO = "1787755869525";
+const VERSAO = "1787763356127";
 const CACHE = "recup-" + VERSAO;
 const ESTADO = "recup-estado";
 
@@ -21,7 +21,7 @@ self.addEventListener("fetch", (e) => {
   let url;
   try { url = new URL(req.url); } catch (er) { return; }
   const mesmaOrigem = url.origin === self.location.origin;
-  const cdn = url.hostname === "cdn.jsdelivr.net";
+  const cdn = url.hostname === "cdn.jsdelivr.net" || url.hostname === "tessdata.projectnaptha.com";
   if (!mesmaOrigem && !cdn) return; /* Supabase e outros: sempre rede */
   e.respondWith(
     caches.match(req).then((hit) => {

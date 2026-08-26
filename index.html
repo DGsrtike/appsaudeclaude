@@ -3299,11 +3299,11 @@ function Tracker({
     id: "diario",
     label: "Diário",
     icon: Heart
-  }, {
+  }, M(cfg, "treino") ? {
     id: "treino",
     label: "Treino",
     icon: Dumbbell
-  }, {
+  } : null, {
     id: "corpo",
     label: "Corpo",
     icon: LineChart
@@ -3320,7 +3320,11 @@ function Tracker({
     id: "relatorio",
     label: "Relatório",
     icon: FileText
-  }];
+  }].filter(Boolean);
+  useEffect(() => {
+    if (loaded && !tabs.some(t => t.id === tab)) setTab("diario");
+  }, [loaded, cfg.perfil]); // eslint-disable-line
+
   const shared = {
     days,
     saveDays,
@@ -3345,6 +3349,16 @@ function Tracker({
     analyses: analyses,
     onOk: () => setDestrancado(true),
     onSair: onLogout
+  });
+  if (loaded && !cfg.perfil) return /*#__PURE__*/React.createElement(EcraPerfil, {
+    cfg: cfg,
+    saveCfg: saveCfg,
+    email: email,
+    proto: proto,
+    saveProto: saveProto,
+    analyses: analyses,
+    saveAnalyses: saveAnalyses,
+    flash: showFlash
   });
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3399,7 +3413,7 @@ function Tracker({
       fontWeight: 600,
       letterSpacing: -0.3
     }
-  }, "A minha recupera\xE7\xE3o"), /*#__PURE__*/React.createElement("p", {
+  }, nomePerfil(cfg) ? `Olá, ${nomePerfil(cfg)}` : "A minha recuperação"), /*#__PURE__*/React.createElement("p", {
     style: {
       margin: "2px 0 0",
       fontSize: 12,
@@ -3713,7 +3727,7 @@ function Diario({
   })();
   const pendentes = ativos.filter(i => i.momento === proximoMomento && doneHoje.indexOf(i.id) < 0);
   const horaDeitar = f.acordar ? minusHours(f.acordar, (cfg.sonoAlvo || 8) + 0.25) : null;
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(CardClima, {
+  return /*#__PURE__*/React.createElement("div", null, M(cfg, "clima") && /*#__PURE__*/React.createElement(CardClima, {
     cfg: cfg,
     saveCfg: saveCfg,
     days: days
@@ -3848,7 +3862,7 @@ function Diario({
     color: band.c,
     w: 150,
     h: 30
-  }))), sem && /*#__PURE__*/React.createElement(Card, {
+  }))), sem && M(cfg, "treino") && /*#__PURE__*/React.createElement(Card, {
     style: {
       marginBottom: 14,
       padding: 16,
@@ -3914,7 +3928,7 @@ function Diario({
   }, a.t), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 16,
     color: C.warn
-  }))), pendentes.length > 0 && /*#__PURE__*/React.createElement(Card, {
+  }))), M(cfg, "protocolo") && pendentes.length > 0 && /*#__PURE__*/React.createElement(Card, {
     style: {
       marginBottom: 14,
       padding: 16
@@ -4132,7 +4146,7 @@ function Diario({
     key: o,
     onClick: () => set("treino", o),
     style: chip(f.treino === o)
-  }, o)))), f.treino !== "Descanso" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(NumField, {
+  }, o)))), f.treino !== "Descanso" && M(cfg, "treino") && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(NumField, {
     label: "Dura\xE7\xE3o do treino",
     value: f.duracao,
     onChange: v => set("duracao", v),
@@ -4218,7 +4232,7 @@ function Diario({
     key: o,
     onClick: () => set("estado", f.estado === o ? null : o),
     style: chip(f.estado === o)
-  }, o)))), /*#__PURE__*/React.createElement(NumField, {
+  }, o)))), M(cfg, "escola") && /*#__PURE__*/React.createElement(NumField, {
     label: "Escola, estudo e explica\xE7\xF5es",
     value: f.estudo,
     onChange: v => set("estudo", v),
@@ -4282,11 +4296,11 @@ function Diario({
   }), /*#__PURE__*/React.createElement(NoiteMa, {
     days: days,
     cfg: cfg
-  }), /*#__PURE__*/React.createElement(JanelaRecuperacao, {
+  }), M(cfg, "treino") && /*#__PURE__*/React.createElement(JanelaRecuperacao, {
     days: days,
     saveDays: saveDays,
     flash: flash
-  }), /*#__PURE__*/React.createElement(Habitos, {
+  }), M(cfg, "habitos") && /*#__PURE__*/React.createElement(Habitos, {
     days: days,
     saveDays: saveDays,
     cfg: cfg,
@@ -4927,33 +4941,42 @@ function Carga(props) {
 
 /* ------------------------------ CORPO ---------------------------- */
 function Corpo(props) {
-  const [sub, setSub] = useState("fisico");
+  const {
+    cfg
+  } = props;
+  const opcoes = [M(cfg, "fisico") && {
+    id: "fisico",
+    label: "Físico"
+  }, M(cfg, "tensao") && {
+    id: "tensao",
+    label: "Tensão"
+  }, M(cfg, "agua") && {
+    id: "agua",
+    label: "Água"
+  }, M(cfg, "comida") && {
+    id: "comida",
+    label: "Refeições"
+  }, M(cfg, "derm") && {
+    id: "pele",
+    label: "Pele"
+  }, M(cfg, "dor") && {
+    id: "dor",
+    label: "Dor"
+  }, M(cfg, "agua") && {
+    id: "hidra",
+    label: "Hidratação"
+  }, (M(cfg, "treino") || M(cfg, "comida")) && {
+    id: "energia",
+    label: "Energia"
+  }].filter(Boolean);
+  const [sub, setSub] = useState(opcoes.length ? opcoes[0].id : "fisico");
+  const activo = opcoes.some(o => o.id === sub) ? sub : (opcoes[0] || {}).id;
+  if (!opcoes.length) return /*#__PURE__*/React.createElement(Empty, null, "N\xE3o tens m\xF3dulos do corpo ligados. Liga-os em Cl\xEDnico \u2192 Dados.");
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Segmented, {
-    value: sub,
+    value: activo,
     onChange: setSub,
-    options: [{
-      id: "fisico",
-      label: "Físico"
-    }, {
-      id: "agua",
-      label: "Água"
-    }, {
-      id: "comida",
-      label: "Refeições"
-    }, {
-      id: "pele",
-      label: "Pele"
-    }, {
-      id: "dor",
-      label: "Dor"
-    }, {
-      id: "hidra",
-      label: "Hidratação"
-    }, {
-      id: "energia",
-      label: "Energia"
-    }]
-  }), sub === "fisico" && /*#__PURE__*/React.createElement(Fisico, props), sub === "agua" && /*#__PURE__*/React.createElement(Agua, props), sub === "comida" && /*#__PURE__*/React.createElement(Refeicoes, props), sub === "pele" && /*#__PURE__*/React.createElement(Pele, props), sub === "dor" && /*#__PURE__*/React.createElement(MapaDor, props), sub === "hidra" && /*#__PURE__*/React.createElement(Hidratacao, props), sub === "energia" && /*#__PURE__*/React.createElement(EnergiaDisp, props));
+    options: opcoes
+  }), activo === "fisico" && /*#__PURE__*/React.createElement(Fisico, props), activo === "tensao" && /*#__PURE__*/React.createElement(TensaoArterial, props), activo === "agua" && /*#__PURE__*/React.createElement(Agua, props), activo === "comida" && /*#__PURE__*/React.createElement(Refeicoes, props), activo === "pele" && /*#__PURE__*/React.createElement(Pele, props), activo === "dor" && /*#__PURE__*/React.createElement(MapaDor, props), activo === "hidra" && /*#__PURE__*/React.createElement(Hidratacao, props), activo === "energia" && /*#__PURE__*/React.createElement(EnergiaDisp, props));
 }
 function Fisico({
   days,
@@ -5377,35 +5400,40 @@ function EnergiaDisp({
 
 /* ----------------------------- CLÍNICO --------------------------- */
 function Clinico(props) {
-  const [sub, setSub] = useState("protocolo");
+  const {
+    cfg
+  } = props;
+  const opcoes = [M(cfg, "protocolo") && {
+    id: "protocolo",
+    label: "Medicação"
+  }, M(cfg, "analises") && {
+    id: "analises",
+    label: "Análises"
+  }, M(cfg, "posop") && {
+    id: "posop",
+    label: "Recuperação"
+  }, {
+    id: "agenda",
+    label: "Consultas"
+  }, {
+    id: "consulta",
+    label: "Modo consulta"
+  }, {
+    id: "historial",
+    label: "Historial"
+  }, M(cfg, "emergencia") && {
+    id: "sos",
+    label: "Emergência"
+  }, {
+    id: "config",
+    label: "Dados"
+  }].filter(Boolean);
+  const [sub0, setSub] = useState(opcoes[0].id);
+  const sub = opcoes.some(o => o.id === sub0) ? sub0 : opcoes[0].id;
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Segmented, {
     value: sub,
     onChange: setSub,
-    options: [{
-      id: "protocolo",
-      label: "Protocolo"
-    }, {
-      id: "analises",
-      label: "Análises"
-    }, {
-      id: "posop",
-      label: "Recuperação"
-    }, {
-      id: "agenda",
-      label: "Consultas"
-    }, {
-      id: "consulta",
-      label: "Modo consulta"
-    }, {
-      id: "historial",
-      label: "Historial"
-    }, {
-      id: "sos",
-      label: "Emergência"
-    }, {
-      id: "config",
-      label: "Dados"
-    }]
+    options: opcoes
   }), sub === "protocolo" && /*#__PURE__*/React.createElement(Protocolo, props), sub === "analises" && /*#__PURE__*/React.createElement(Analises, props), sub === "posop" && /*#__PURE__*/React.createElement(PosOp, props), sub === "agenda" && /*#__PURE__*/React.createElement(AgendaMedica, props), sub === "consulta" && /*#__PURE__*/React.createElement(ModoConsulta, props), sub === "historial" && /*#__PURE__*/React.createElement(Historial, props), sub === "sos" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(CartaoEmergencia, {
     cfg: props.cfg,
     proto: props.proto,
@@ -5566,7 +5594,7 @@ function Protocolo({
     labels: true,
     h: 60,
     color: C.teal
-  }))), iso && /*#__PURE__*/React.createElement(Card, {
+  }))), iso && M(cfg, "derm") && /*#__PURE__*/React.createElement(Card, {
     style: {
       marginTop: 16
     }
@@ -6708,11 +6736,12 @@ function AgendaMedica(D) {
 }
 
 /* ---------------------------- CONFIGURAÇÃO ----------------------- */
-function Config({
-  cfg,
-  saveCfg,
-  flash
-}) {
+function Config(props) {
+  const {
+    cfg,
+    saveCfg,
+    flash
+  } = props;
   const [c, setC] = useState(cfg);
   const [, forcar] = useState(0);
   const set = (k, v) => setC(p => ({
@@ -6747,7 +6776,11 @@ function Config({
   }), /*#__PURE__*/React.createElement(EditarModalidades, {
     cfg: cfg,
     saveCfg: saveCfg
-  }), /*#__PURE__*/React.createElement(NumField, {
+  }), /*#__PURE__*/React.createElement(EditarModulos, {
+    cfg: cfg,
+    saveCfg: saveCfg,
+    flash: flash
+  }), /*#__PURE__*/React.createElement(ReconfigurarPorDocumentos, props), /*#__PURE__*/React.createElement(NumField, {
     label: "Peso de refer\xEAncia",
     value: c.peso,
     onChange: v => set("peso", v),
@@ -6878,10 +6911,10 @@ function Insights(D) {
     }, {
       id: "percurso",
       label: "Percurso"
-    }, {
+    }, ...(M(cfg, "foco") ? [{
       id: "foco",
       label: "Foco"
-    }, {
+    }] : []), {
       id: "semana",
       label: "Semana"
     }, {
@@ -7666,6 +7699,22 @@ async function generatePdf(D) {
       para(a.acao);
       y += 6;
     });
+  }
+
+  /* Tensão arterial */
+  {
+    const todas = [];
+    Object.keys(days).sort().forEach(d => (days[d].tensao || []).forEach(t => todas.push({
+      ...t,
+      d
+    })));
+    if (todas.length) {
+      const rec = todas.filter(t => t.d >= daysAgoKey(13));
+      const ms = avg(rec.map(t => t.sis)),
+        md = avg(rec.map(t => t.dia));
+      const cl = classificaTA(ms, md);
+      table("Tensão arterial", [["Média (14 dias)", `${r0(ms)}/${r0(md)} mmHg${cl ? ` — ${cl.t}` : ""}`], ["Medições", `${rec.length} nos últimos 14 dias`], ["Última", `${todas[todas.length - 1].sis}/${todas[todas.length - 1].dia} · ${prettyDate(todas[todas.length - 1].d)}`]]);
+    }
   }
 
   /* Pele e testes */
@@ -12515,13 +12564,13 @@ function Planear({
       marginTop: 10,
       lineHeight: 1.5
     }
-  }, "Quem faz o plano \xE9 o teu treinador. Isto serve para levares um argumento com n\xFAmeros quando achares que a semana est\xE1 pesada de mais.")), /*#__PURE__*/React.createElement(Escola, {
+  }, "Quem faz o plano \xE9 o teu treinador. Isto serve para levares um argumento com n\xFAmeros quando achares que a semana est\xE1 pesada de mais.")), M(cfg, "escola") && /*#__PURE__*/React.createElement(Escola, {
     agenda: agenda,
     saveAgenda: saveAgenda,
     days: days,
     cfg: cfg,
     flash: flash
-  }), /*#__PURE__*/React.createElement(Pomodoro, {
+  }), M(cfg, "escola") && /*#__PURE__*/React.createElement(Pomodoro, {
     days: days,
     saveDays: saveDays,
     flash: flash
@@ -17432,6 +17481,1548 @@ function PedidoTreinador(D) {
       lineHeight: 1.5
     }
   }, "L\xEA antes de enviar e muda o que quiseres. O tom \xE9 de quem quer perceber, n\xE3o de quem se est\xE1 a queixar \u2014 e faz diferen\xE7a.")));
+}
+
+/* ================================================================ */
+/*        v12 — perfis e módulos: a app deixa de ser só tua          */
+/* ================================================================ */
+
+const MODULOS = [{
+  id: "treino",
+  n: "Treino e carga",
+  x: "Força, carga de treino, testes e planeamento da semana"
+}, {
+  id: "escola",
+  n: "Escola",
+  x: "Testes, entregas e horas de estudo"
+}, {
+  id: "protocolo",
+  n: "Medicação e suplementos",
+  x: "Tomas diárias, stock, interações e verificação de rótulos"
+}, {
+  id: "analises",
+  n: "Análises clínicas",
+  x: "Valores, intervalos de referência e evolução"
+}, {
+  id: "tensao",
+  n: "Tensão arterial",
+  x: "Registo e classificação das medições"
+}, {
+  id: "fisico",
+  n: "Peso e composição",
+  x: "Peso, altura, fotografias de progresso"
+}, {
+  id: "agua",
+  n: "Hidratação",
+  x: "Quanto beber por dia e taxa de sudação"
+}, {
+  id: "comida",
+  n: "Refeições",
+  x: "Marcar se comeste, sem contar calorias"
+}, {
+  id: "dor",
+  n: "Mapa de dor",
+  x: "Onde dói e com que frequência"
+}, {
+  id: "derm",
+  n: "Pele e dermatologia",
+  x: "Escala, fotografias e tratamento com isotretinoína"
+}, {
+  id: "posop",
+  n: "Pós-operatório",
+  x: "Linha do tempo de recuperação de uma cirurgia"
+}, {
+  id: "habitos",
+  n: "Hábitos",
+  x: "Pequenas coisas repetidas, com sequências"
+}, {
+  id: "foco",
+  n: "Modo foco",
+  x: "Cofre do código do Tempo de Ecrã à noite"
+}, {
+  id: "clima",
+  n: "Tempo e UV",
+  x: "Temperatura, índice UV e qualidade do ar"
+}, {
+  id: "emergencia",
+  n: "Cartão de emergência",
+  x: "Dados para quem te socorrer"
+}];
+const PRESETS_PERFIL = {
+  atleta: {
+    n: "Atleta em acompanhamento",
+    x: "Treino, recuperação, medicação e consultas — o conjunto completo.",
+    mods: ["treino", "escola", "protocolo", "analises", "fisico", "agua", "comida", "dor", "derm", "posop", "habitos", "foco", "clima", "emergencia"]
+  },
+  adulto: {
+    n: "Adulto — saúde geral",
+    x: "Sono, peso, tensão arterial, medicação, análises e consultas.",
+    mods: ["protocolo", "analises", "tensao", "fisico", "agua", "comida", "dor", "habitos", "clima", "emergencia"]
+  },
+  simples: {
+    n: "Só o essencial",
+    x: "Sono, energia, consultas e análises. Nada mais.",
+    mods: ["analises", "fisico", "emergencia"]
+  }
+};
+function M(cfg, id) {
+  const p = cfg && cfg.perfil;
+  if (!p || !p.mods) return true;
+  return p.mods.indexOf(id) >= 0;
+}
+function nomePerfil(cfg) {
+  return cfg && cfg.perfil && cfg.perfil.nome || "";
+}
+function EcraPerfil({
+  cfg,
+  saveCfg,
+  email,
+  proto,
+  saveProto,
+  analyses,
+  saveAnalyses,
+  flash
+}) {
+  const [passo, setPasso] = useState(1);
+  const [nome, setNome] = useState("");
+  const [tipo, setTipo] = useState(null);
+  const [mods, setMods] = useState([]);
+  const [proposta, setProposta] = useState(null);
+  const [comDocs, setComDocs] = useState(false);
+  const escolher = t => {
+    setTipo(t);
+    setMods(PRESETS_PERFIL[t].mods.slice());
+    setPasso(2);
+  };
+  const alternar = id => setMods(p => p.indexOf(id) >= 0 ? p.filter(x => x !== id) : [...p, id]);
+  const gravarPerfil = () => saveCfg({
+    ...cfg,
+    perfil: {
+      nome: nome.trim() || email.split("@")[0],
+      tipo,
+      mods,
+      criado: dayKey()
+    }
+  });
+  const concluir = () => {
+    gravarPerfil();
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: "100vh",
+      background: C.bg,
+      fontFamily: FONT,
+      color: C.ink
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 560,
+      margin: "0 auto",
+      padding: "calc(env(safe-area-inset-top) + 28px) 16px 40px"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 50,
+      height: 50,
+      borderRadius: 15,
+      background: `linear-gradient(135deg, ${C.primary}, ${C.teal})`,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement(Waves, {
+    size: 26,
+    color: "#fff",
+    strokeWidth: 2.2
+  })), /*#__PURE__*/React.createElement("h1", {
+    style: {
+      fontFamily: SERIF,
+      fontSize: 25,
+      color: C.heading,
+      margin: "0 0 8px",
+      fontWeight: 600
+    }
+  }, passo === 1 ? "Para quem é esta app?" : passo === 2 ? "O que queres acompanhar?" : passo === 3 ? "Já tens documentos médicos?" : "Quase lá"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13.5,
+      color: C.muted,
+      margin: "0 0 22px",
+      lineHeight: 1.6
+    }
+  }, passo === 1 ? "Isto decide o que aparece e o que fica escondido. Podes mudar tudo mais tarde em Clínico → Dados." : passo === 2 ? "Liga só o que fizer sentido para ti. Uma app cheia de coisas que não usas é uma app que se deixa de abrir." : passo === 3 ? "Receitas, análises ou relatórios. A app lê-os dentro do telemóvel e propõe-te a configuração — tu confirmas." : "Confere e corrige. Só entra o que confirmares."), passo === 1 && /*#__PURE__*/React.createElement("div", null, Object.entries(PRESETS_PERFIL).map(([k, p]) => /*#__PURE__*/React.createElement("button", {
+    key: k,
+    onClick: () => escolher(k),
+    style: {
+      width: "100%",
+      textAlign: "left",
+      background: C.surface,
+      border: `1px solid ${C.line}`,
+      borderRadius: 18,
+      padding: 18,
+      marginBottom: 12,
+      cursor: "pointer",
+      boxShadow: C.shadow
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: "block",
+      fontSize: 16,
+      fontWeight: 700,
+      color: C.heading
+    }
+  }, p.n), /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: "block",
+      fontSize: 12.5,
+      color: C.muted,
+      marginTop: 4,
+      lineHeight: 1.5
+    }
+  }, p.x)), /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 18,
+    color: C.teal
+  }))))), passo === 2 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 13.5,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Como te chamas"), /*#__PURE__*/React.createElement(TextInput, {
+    value: nome,
+    onChange: setNome,
+    placeholder: "O teu primeiro nome"
+  })), /*#__PURE__*/React.createElement(Card, null, MODULOS.map(m => /*#__PURE__*/React.createElement(CheckRow, {
+    key: m.id,
+    on: mods.indexOf(m.id) >= 0,
+    onToggle: () => alternar(m.id),
+    title: m.n,
+    sub: m.x
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 18
+    }
+  }, /*#__PURE__*/React.createElement(PrimaryBtn, {
+    onClick: () => setPasso(3)
+  }, /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 17
+  }), " Continuar")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 10
+    }
+  }, /*#__PURE__*/React.createElement(GhostBtn, {
+    onClick: () => setPasso(1)
+  }, "Voltar"))), passo === 3 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(AnexarDocumentos, {
+    flash: flash,
+    onProposta: p => {
+      setProposta(p);
+      setComDocs(p !== PROPOSTA_VAZIA);
+      setPasso(4);
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement(GhostBtn, {
+    onClick: concluir
+  }, "Saltar \u2014 configuro depois"))), passo === 4 && /*#__PURE__*/React.createElement(RevisaoConfig, {
+    proposta: proposta || PROPOSTA_VAZIA,
+    cfg: {
+      ...cfg,
+      perfil: {
+        nome: nome.trim() || email.split("@")[0],
+        tipo,
+        mods,
+        criado: dayKey()
+      }
+    },
+    saveCfg: saveCfg,
+    proto: proto,
+    saveProto: saveProto,
+    analyses: analyses,
+    saveAnalyses: saveAnalyses,
+    flash: flash,
+    comDocumentos: comDocs,
+    onConcluir: () => {}
+  }), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11,
+      color: C.muted,
+      textAlign: "center",
+      marginTop: 24,
+      lineHeight: 1.5
+    }
+  }, "Sess\xE3o: ", email)));
+}
+function EditarModulos({
+  cfg,
+  saveCfg,
+  flash
+}) {
+  const [aberto, setAberto] = useState(false);
+  const p = cfg.perfil || {
+    mods: MODULOS.map(m => m.id)
+  };
+  const alternar = id => {
+    const mods = p.mods.indexOf(id) >= 0 ? p.mods.filter(x => x !== id) : [...p.mods, id];
+    saveCfg({
+      ...cfg,
+      perfil: {
+        ...p,
+        mods
+      }
+    });
+    vibrar(8);
+  };
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 16,
+      padding: 16
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAberto(!aberto),
+    style: {
+      border: "none",
+      background: "transparent",
+      color: C.teal,
+      fontSize: 13.5,
+      fontWeight: 700,
+      cursor: "pointer",
+      padding: 0,
+      display: "flex",
+      alignItems: "center",
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 15,
+    style: {
+      transform: aberto ? "rotate(90deg)" : "none",
+      transition: "transform .2s"
+    }
+  }), " O que aparece na app"), aberto && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 13.5,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Nome"), /*#__PURE__*/React.createElement(TextInput, {
+    value: p.nome || "",
+    onChange: v => saveCfg({
+      ...cfg,
+      perfil: {
+        ...p,
+        nome: v
+      }
+    }),
+    placeholder: "O teu nome"
+  })), MODULOS.map(m => /*#__PURE__*/React.createElement(CheckRow, {
+    key: m.id,
+    on: p.mods.indexOf(m.id) >= 0,
+    onToggle: () => alternar(m.id),
+    title: m.n,
+    sub: m.x
+  })), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11,
+      color: C.muted,
+      marginTop: 12,
+      lineHeight: 1.5
+    }
+  }, "Desligar um m\xF3dulo n\xE3o apaga nada \u2014 s\xF3 o esconde. Voltas a lig\xE1-lo e os dados est\xE3o l\xE1.")));
+}
+
+/* ------------------------ Tensão arterial ------------------------ */
+function classificaTA(sis, dia) {
+  if (sis == null || dia == null) return null;
+  if (sis >= 180 || dia >= 110) return {
+    t: "Muito elevada",
+    c: C.warn,
+    d: "Valores desta ordem, repetidos e em repouso, são para falar com um médico sem esperar. Se vierem com dor no peito, falta de ar, dor de cabeça forte ou visão alterada, é urgência.",
+    grave: true
+  };
+  if (sis >= 160 || dia >= 100) return {
+    t: "Elevada — grau 2",
+    c: C.warn,
+    d: "Repete a medição noutro dia, em repouso. Se se mantiver, marca consulta."
+  };
+  if (sis >= 140 || dia >= 90) return {
+    t: "Elevada — grau 1",
+    c: C.amber,
+    d: "Uma medição isolada não diz muito. Vale a pena medir durante uma semana, sempre à mesma hora."
+  };
+  if (sis >= 130 || dia >= 85) return {
+    t: "Normal-alta",
+    c: C.amber,
+    d: "Dentro do que se considera normal, mas na parte de cima. De olho."
+  };
+  if (sis >= 120 || dia >= 80) return {
+    t: "Normal",
+    c: C.good,
+    d: "Valores normais."
+  };
+  if (sis < 90 || dia < 60) return {
+    t: "Baixa",
+    c: C.teal,
+    d: "Baixa. Só é problema se der tonturas ou fraqueza."
+  };
+  return {
+    t: "Ótima",
+    c: C.good,
+    d: "Valores ótimos."
+  };
+}
+function TensaoArterial({
+  days,
+  saveDays,
+  flash,
+  cfg
+}) {
+  const k = dayKey();
+  const hoje = days[k] || {};
+  const [sis, setSis] = useState(null);
+  const [dia, setDia] = useState(null);
+  const [pulso, setPulso] = useState(null);
+  const guardar = () => {
+    if (sis == null || dia == null) return;
+    const lista = (hoje.tensao || []).concat([{
+      id: uid8(),
+      sis,
+      dia,
+      pulso,
+      hora: new Date().toISOString()
+    }]);
+    saveDays({
+      ...days,
+      [k]: {
+        ...hoje,
+        tensao: lista
+      }
+    });
+    setSis(null);
+    setDia(null);
+    setPulso(null);
+    vibrar(15);
+    flash("Medição guardada");
+  };
+  const todas = [];
+  Object.keys(days).sort().forEach(d => (days[d].tensao || []).forEach(t => todas.push({
+    ...t,
+    d
+  })));
+  const recentes = todas.filter(t => t.d >= daysAgoKey(6));
+  const mSis = avg(recentes.map(t => t.sis)),
+    mDia = avg(recentes.map(t => t.dia));
+  const cl = classificaTA(sis, dia) || classificaTA(mSis, mDia);
+  const ultimas = todas.slice(-14);
+  const del = (d, id) => saveDays({
+    ...days,
+    [d]: {
+      ...days[d],
+      tensao: (days[d].tensao || []).filter(x => x.id !== id)
+    }
+  });
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Heart, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Sentado, com as costas apoiadas e o bra\xE7o \xE0 altura do cora\xE7\xE3o, depois de cinco minutos parado. Duas medi\xE7\xF5es com um minuto de intervalo e regista a segunda."
+  }, "Tens\xE3o arterial"), /*#__PURE__*/React.createElement(Grid, {
+    cols: 3
+  }, /*#__PURE__*/React.createElement(MiniNum, {
+    label: "Sist\xF3lica",
+    value: sis,
+    onChange: setSis,
+    placeholder: "120"
+  }), /*#__PURE__*/React.createElement(MiniNum, {
+    label: "Diast\xF3lica",
+    value: dia,
+    onChange: setDia,
+    placeholder: "80"
+  }), /*#__PURE__*/React.createElement(MiniNum, {
+    label: "Pulsa\xE7\xE3o",
+    value: pulso,
+    onChange: setPulso,
+    placeholder: "70"
+  })), sis != null && dia != null && cl && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: `${cl.c}14`,
+      border: `1px solid ${cl.c}44`,
+      borderRadius: 14,
+      padding: 14,
+      marginTop: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      fontWeight: 700,
+      color: cl.c,
+      marginBottom: 4
+    }
+  }, sis, "/", dia, " \u2014 ", cl.t), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12.5,
+      color: C.ink,
+      margin: 0,
+      lineHeight: 1.55
+    }
+  }, cl.d)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(PrimaryBtn, {
+    onClick: guardar,
+    disabled: sis == null || dia == null
+  }, /*#__PURE__*/React.createElement(Check, {
+    size: 16
+  }), " Guardar medi\xE7\xE3o"))), todas.length > 0 && /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(TrendingUp, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Uma medi\xE7\xE3o isolada n\xE3o classifica ningu\xE9m. O que conta \xE9 a m\xE9dia de v\xE1rios dias, medidos da mesma maneira."
+  }, "M\xE9dia dos \xFAltimos 7 dias"), /*#__PURE__*/React.createElement(Grid, {
+    cols: 3
+  }, /*#__PURE__*/React.createElement(Stat, {
+    label: "Sist\xF3lica",
+    value: mSis != null ? r0(mSis) : "—",
+    color: classificaTA(mSis, mDia) ? classificaTA(mSis, mDia).c : C.heading
+  }), /*#__PURE__*/React.createElement(Stat, {
+    label: "Diast\xF3lica",
+    value: mDia != null ? r0(mDia) : "—",
+    color: classificaTA(mSis, mDia) ? classificaTA(mSis, mDia).c : C.heading
+  }), /*#__PURE__*/React.createElement(Stat, {
+    label: "Medi\xE7\xF5es",
+    value: recentes.length,
+    sub: "nos \xFAltimos 7 dias"
+  })), ultimas.length > 1 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: C.muted,
+      marginBottom: 6
+    }
+  }, "\xDAltimas medi\xE7\xF5es"), /*#__PURE__*/React.createElement(Sparkline, {
+    values: ultimas.map(t => t.sis),
+    color: C.warn,
+    w: 280,
+    h: 40
+  }), /*#__PURE__*/React.createElement(Sparkline, {
+    values: ultimas.map(t => t.dia),
+    color: C.teal,
+    w: 280,
+    h: 40
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12
+    }
+  }, todas.slice(-8).reverse().map(t => {
+    const c = classificaTA(t.sis, t.dia);
+    return /*#__PURE__*/React.createElement(Row, {
+      key: t.id,
+      left: /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 12.5,
+          color: C.muted
+        }
+      }, prettyDate(t.d), " \xB7 ", new Date(t.hora).toLocaleTimeString("pt-PT", {
+        hour: "2-digit",
+        minute: "2-digit"
+      })),
+      right: /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 14,
+          fontWeight: 700,
+          color: c ? c.c : C.ink
+        }
+      }, t.sis, "/", t.dia, t.pulso ? ` · ${t.pulso}` : ""),
+      onDel: () => del(t.d, t.id)
+    });
+  })), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11,
+      color: C.muted,
+      marginTop: 12,
+      lineHeight: 1.55
+    }
+  }, "Classifica\xE7\xE3o segundo as categorias habituais europeias. N\xE3o \xE9 diagn\xF3stico: quem diagnostica hipertens\xE3o \xE9 um m\xE9dico, com medi\xE7\xF5es repetidas e em condi\xE7\xF5es controladas.")));
+}
+
+/* ================================================================ */
+/*     v13 — configurar a partir de documentos (OCR no telemóvel)    */
+/* ================================================================ */
+
+const MEDS_CONHECIDOS = ["isotretinoína", "isotretinoina", "azitromicina", "amoxicilina", "ibuprofeno", "paracetamol", "ramipril", "losartan", "valsartan", "amlodipina", "bisoprolol", "nebivolol", "enalapril", "perindopril", "indapamida", "hidroclorotiazida", "atorvastatina", "sinvastatina", "rosuvastatina", "metformina", "gliclazida", "insulina", "levotiroxina", "omeprazol", "pantoprazol", "salbutamol", "budesonida", "montelucaste", "cetirizina", "loratadina", "diazepam", "sertralina", "fluoxetina", "vigantol", "becozyme", "lisina", "creatina", "magnésio", "magnesio", "glicina", "folifer", "sanguenol", "boswellia", "tart cherry", "vitamina c", "vitamina d", "ferro", "ácido fólico", "disocor", "bicarbonato", "cafeína", "taurina", "hyseac", "mandélico"];
+const MEDS_TENSAO = ["ramipril", "losartan", "valsartan", "amlodipina", "bisoprolol", "nebivolol", "enalapril", "perindopril", "indapamida", "hidroclorotiazida"];
+const MOMENTO_PISTAS = [{
+  m: "Jejum",
+  p: ["jejum", "em jejum", "antes do pequeno"]
+}, {
+  m: "Jantar",
+  p: ["ao jantar", "após o jantar", "apos o jantar", "depois do jantar", "à noite", "a noite"]
+}, {
+  m: "Noite",
+  p: ["ao deitar", "antes de dormir"]
+}, {
+  m: "Pré-treino",
+  p: ["antes do treino", "pré-treino", "pre-treino"]
+}, {
+  m: "Pós-treino",
+  p: ["depois do treino", "pós-treino", "pos-treino"]
+}];
+
+/* ---- OCR dentro do telemóvel ---- */
+let _tess = null;
+function carregarTesseract() {
+  if (_tess) return Promise.resolve(_tess);
+  if (typeof window !== "undefined" && window.Tesseract) {
+    _tess = window.Tesseract;
+    return Promise.resolve(_tess);
+  }
+  return new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+    s.onload = () => {
+      _tess = window.Tesseract;
+      res(_tess);
+    };
+    s.onerror = () => rej(new Error("sem rede"));
+    document.head.appendChild(s);
+  });
+}
+async function lerImagem(file, onProg) {
+  const T = await carregarTesseract();
+  const r = await T.recognize(file, "por", {
+    logger: m => {
+      if (m.status === "recognizing text" && onProg) onProg(Math.round(m.progress * 100));
+    }
+  });
+  return r && r.data && r.data.text || "";
+}
+
+/* ---- Extração por regras ---- */
+function normTxt(t) {
+  return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+function extrairDatas(txt) {
+  const out = [];
+  const re1 = /\b(20\d{2})[-/](\d{1,2})[-/](\d{1,2})\b/g;
+  const re2 = /\b(\d{1,2})[-/](\d{1,2})[-/](20\d{2})\b/g;
+  let m;
+  while (m = re1.exec(txt)) out.push(`${m[1]}-${String(m[2]).padStart(2, "0")}-${String(m[3]).padStart(2, "0")}`);
+  while (m = re2.exec(txt)) out.push(`${m[3]}-${String(m[2]).padStart(2, "0")}-${String(m[1]).padStart(2, "0")}`);
+  return [...new Set(out)].sort();
+}
+function extrairDeTexto(txt) {
+  const n = normTxt(txt);
+  const linhas = String(txt).split(/\n+/).map(l => l.trim()).filter(Boolean);
+
+  /* medicamentos */
+  const meds = [];
+  const vistos = {};
+  linhas.forEach(linha => {
+    const ln = normTxt(linha);
+    const conhecido = MEDS_CONHECIDOS.find(med => ln.indexOf(normTxt(med)) >= 0);
+    const dose = linha.match(/(\d+[.,]?\d*)\s*(mg|mcg|µg|ug|g|ui|ml|gotas)\b/i);
+    if (!conhecido && !dose) return;
+    let nome = conhecido ? conhecido.charAt(0).toUpperCase() + conhecido.slice(1) : null;
+    if (!nome) {
+      const cand = linha.replace(/^\d+[.\)]?\s*/, "").match(/^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'\- ]{3,32})/);
+      if (!cand) return;
+      nome = cand[1].trim();
+      if (nome.split(" ").length > 4) return;
+    }
+    const chave = normTxt(nome);
+    if (vistos[chave]) return;
+    vistos[chave] = 1;
+    let momento = "Jantar";
+    MOMENTO_PISTAS.forEach(mp => {
+      if (mp.p.some(p => ln.indexOf(normTxt(p)) >= 0)) momento = mp.m;
+    });
+    meds.push({
+      id: uid8(),
+      nome: dose ? `${nome} ${dose[1]} ${dose[2].toLowerCase()}` : nome,
+      momento,
+      nota: (linha.match(/(1|2|3)\s*(c[aá]psula|comprimido|aplica[cç][aã]o)[^\n]{0,40}/i) || [""])[0].trim(),
+      on: true
+    });
+  });
+
+  /* análises */
+  const params = [];
+  MARCADORES.forEach(mk => {
+    const alvo = normTxt(mk.n).replace(/[()]/g, "");
+    const idx = n.indexOf(alvo.slice(0, Math.max(6, Math.min(alvo.length, 14))));
+    if (idx < 0) return;
+    const trecho = txt.slice(idx, idx + 90);
+    const v = trecho.match(/(\d+[.,]?\d*)/);
+    if (!v) return;
+    const val = parseFloat(v[1].replace(",", "."));
+    if (isNaN(val)) return;
+    if (val > mk.max * 12 || val < mk.min / 12) return;
+    params.push({
+      id: uid8(),
+      n: mk.n,
+      v: String(v[1]).replace(",", "."),
+      u: mk.u,
+      on: true
+    });
+  });
+
+  /* pessoais */
+  const peso = txt.match(/peso[:\s]*(\d{2,3}[.,]?\d?)\s*kg/i) || txt.match(/(\d{2,3}[.,]?\d?)\s*kg\b/i);
+  const altura = txt.match(/altura[:\s]*(\d{3})\s*cm/i) || txt.match(/\b(1[,.]\d{2})\s*m\b/i);
+  const sangue = txt.match(/\b(AB|A|B|O)\s*(\+|-|positivo|negativo)\b/i);
+  const alergia = linhas.find(l => /alergi/i.test(l));
+  const datas = extrairDatas(txt);
+  const temIso = n.indexOf("isotretinoin") >= 0;
+  const temCirurgia = /(cirurgia|intervenc|adenoamigdal|turbinect|operat[oó]rio|bloco operat)/.test(n);
+  const temTensao = MEDS_TENSAO.some(m => n.indexOf(m) >= 0);
+  const modulos = [];
+  if (meds.length) modulos.push("protocolo");
+  if (params.length) modulos.push("analises");
+  if (temIso) modulos.push("derm");
+  if (temCirurgia) modulos.push("posop");
+  if (temTensao) modulos.push("tensao");
+  return {
+    meds,
+    params,
+    datas,
+    modulos,
+    pessoal: {
+      peso: peso ? parseFloat(peso[1].replace(",", ".")) : null,
+      altura: altura ? altura[1].indexOf(",") >= 0 || altura[1].indexOf(".") >= 0 ? Math.round(parseFloat(altura[1].replace(",", ".")) * 100) : parseFloat(altura[1]) : null,
+      sangue: sangue ? `${sangue[1].toUpperCase()}${/pos|\+/i.test(sangue[2]) ? "+" : "-"}` : "",
+      alergias: alergia || ""
+    },
+    iso: temIso ? {
+      dose: (txt.match(/isotretinoin[^\n]{0,40}?(\d+)\s*mg/i) || [])[1] || 20,
+      meses: (txt.match(/(\d+)\s*meses/i) || [])[1] || 6,
+      inicio: datas[datas.length - 1] || dayKey()
+    } : null,
+    cirurgia: temCirurgia ? datas[datas.length - 1] || "" : ""
+  };
+}
+function fundirPropostas(a, b) {
+  if (!a) return b;
+  const chave = x => normTxt(x.nome || x.n);
+  const meds = a.meds.concat(b.meds.filter(m => !a.meds.some(x => chave(x) === chave(m))));
+  const params = a.params.concat(b.params.filter(p => !a.params.some(x => chave(x) === chave(p))));
+  return {
+    meds,
+    params,
+    datas: [...new Set(a.datas.concat(b.datas))].sort(),
+    modulos: [...new Set(a.modulos.concat(b.modulos))],
+    pessoal: {
+      peso: b.pessoal.peso || a.pessoal.peso,
+      altura: b.pessoal.altura || a.pessoal.altura,
+      sangue: b.pessoal.sangue || a.pessoal.sangue,
+      alergias: b.pessoal.alergias || a.pessoal.alergias
+    },
+    iso: b.iso || a.iso,
+    cirurgia: b.cirurgia || a.cirurgia
+  };
+}
+const PROPOSTA_VAZIA = {
+  meds: [],
+  params: [],
+  datas: [],
+  modulos: [],
+  pessoal: {
+    peso: null,
+    altura: null,
+    sangue: "",
+    alergias: ""
+  },
+  iso: null,
+  cirurgia: ""
+};
+
+/* ---- Ecrã de revisão: nada entra sem confirmação ---- */
+function RevisaoConfig({
+  proposta,
+  cfg,
+  saveCfg,
+  proto,
+  saveProto,
+  analyses,
+  saveAnalyses,
+  onConcluir,
+  flash,
+  comDocumentos
+}) {
+  const [meds, setMeds] = useState(proposta.meds);
+  const [params, setParams] = useState(proposta.params);
+  const [dataAnalise, setDataAnalise] = useState(proposta.datas.length ? proposta.datas[proposta.datas.length - 1] : dayKey());
+  const [iso, setIso] = useState(proposta.iso ? {
+    on: true,
+    inicio: proposta.iso.inicio,
+    dose: Number(proposta.iso.dose),
+    meses: Number(proposta.iso.meses)
+  } : {
+    on: false,
+    inicio: dayKey(),
+    dose: 20,
+    meses: 6
+  });
+  const [cirurgia, setCirurgia] = useState({
+    on: !!proposta.cirurgia,
+    data: proposta.cirurgia || dayKey()
+  });
+  const [pes, setPes] = useState({
+    ...proposta.pessoal,
+    nascimento: cfg.nascimento || ""
+  });
+  const [contacto, setContacto] = useState({
+    n: "",
+    tel: ""
+  });
+  const [novoMed, setNovoMed] = useState("");
+  const alternar = (lista, set, id) => set(lista.map(x => x.id === id ? {
+    ...x,
+    on: !x.on
+  } : x));
+  const editar = (lista, set, id, campo, v) => set(lista.map(x => x.id === id ? {
+    ...x,
+    [campo]: v
+  } : x));
+  const remover = (lista, set, id) => set(lista.filter(x => x.id !== id));
+  const aplicar = async () => {
+    const escolhidos = meds.filter(m => m.on);
+    if (escolhidos.length) {
+      const base = (proto.itens || []).filter(i => !escolhidos.some(e => normTxt(e.nome) === normTxt(i.nome)));
+      await saveProto({
+        ...proto,
+        itens: base.concat(escolhidos.map(m => ({
+          id: uid8(),
+          nome: m.nome,
+          momento: m.momento,
+          nota: m.nota || ""
+        })))
+      });
+    }
+    const ps = params.filter(p => p.on);
+    if (ps.length) {
+      await saveAnalyses([{
+        id: "a" + Date.now(),
+        date: dataAnalise,
+        tipo: "Sangue",
+        notas: comDocumentos ? "Lido a partir de um documento e confirmado por mim." : "",
+        params: ps.map(p => ({
+          n: p.n,
+          v: p.v,
+          u: p.u
+        })),
+        at: new Date().toISOString()
+      }].concat(analyses || []));
+    }
+    const p = cfg.perfil || {
+      mods: []
+    };
+    const mods = [...new Set(p.mods.concat(iso.on ? ["derm", "protocolo"] : []).concat(cirurgia.on ? ["posop"] : []).concat(escolhidos.length ? ["protocolo"] : []).concat(ps.length ? ["analises"] : []).concat(proposta.modulos))];
+    const novo = {
+      ...cfg,
+      perfil: {
+        ...p,
+        mods
+      }
+    };
+    if (iso.on) {
+      novo.isoStart = iso.inicio;
+      novo.isoDoseMg = iso.dose;
+      novo.isoMeses = iso.meses;
+      novo.isoPesoKg = pes.peso || cfg.peso;
+    } else {
+      novo.isoStart = "";
+    }
+    novo.cirurgiaData = cirurgia.on ? cirurgia.data : "";
+    if (pes.peso) novo.peso = pes.peso;
+    if (pes.nascimento) novo.nascimento = pes.nascimento;
+    novo.emergencia = {
+      ...(cfg.emergencia || {}),
+      sangue: pes.sangue || (cfg.emergencia || {}).sangue || "",
+      alergias: pes.alergias || (cfg.emergencia || {}).alergias || "",
+      contactos: contacto.n && contacto.tel ? [...((cfg.emergencia || {}).contactos || []), contacto] : (cfg.emergencia || {}).contactos || []
+    };
+    await saveCfg(novo);
+    if (pes.altura) {
+      const d = await store.get("log:days");
+      const days = d ? JSON.parse(d) : {};
+      const k = dayKey();
+      days[k] = {
+        ...(days[k] || {}),
+        body: {
+          ...((days[k] || {}).body || {}),
+          altura: pes.altura,
+          peso: pes.peso != null ? pes.peso : ((days[k] || {}).body || {}).peso,
+          at: new Date().toISOString()
+        }
+      };
+      await store.set("log:days", JSON.stringify(days));
+    }
+    flash && flash("Configurado");
+    onConcluir && onConcluir();
+  };
+  const nada = !meds.length && !params.length && !iso.on && !cirurgia.on;
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Check, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: comDocumentos ? "Isto é o que consegui ler dos teus documentos. Confere tudo — sobretudo doses e valores — e corrige o que estiver mal antes de aplicar. Nada entra sem passares por aqui." : "Preenche só o que fizer sentido. Podes deixar tudo vazio e configurar mais tarde."
+  }, comDocumentos ? "Confirma o que li" : "Configuração"), comDocumentos && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.amberSoft,
+      borderRadius: 12,
+      padding: "12px 14px",
+      fontSize: 12.5,
+      color: C.warn,
+      lineHeight: 1.55
+    }
+  }, "A leitura autom\xE1tica engana-se, sobretudo em doses e em letra manuscrita. O que ficar aqui errado fica errado na app.")), /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: C.heading,
+      marginBottom: 10
+    }
+  }, "Medica\xE7\xE3o e suplementos ", meds.length ? `(${meds.filter(m => m.on).length}/${meds.length})` : ""), meds.map(m => /*#__PURE__*/React.createElement("div", {
+    key: m.id,
+    style: {
+      padding: "10px 0",
+      borderTop: `1px solid ${C.line}`
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => alternar(meds, setMeds, m.id),
+    style: {
+      border: "none",
+      background: "transparent",
+      cursor: "pointer",
+      padding: 0
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 22,
+      height: 22,
+      borderRadius: 7,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      border: `1.5px solid ${m.on ? C.good : C.line}`,
+      background: m.on ? C.good : "transparent"
+    }
+  }, m.on && /*#__PURE__*/React.createElement(Check, {
+    size: 13,
+    color: "#fff",
+    strokeWidth: 3
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement(TextInput, {
+    value: m.nome,
+    onChange: v => editar(meds, setMeds, m.id, "nome", v)
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: () => remover(meds, setMeds, m.id),
+    style: iconBtn()
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 15
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 6,
+      marginTop: 8,
+      paddingLeft: 30
+    }
+  }, MOMENTOS.map(mo => /*#__PURE__*/React.createElement("button", {
+    key: mo,
+    onClick: () => editar(meds, setMeds, m.id, "momento", mo),
+    style: {
+      ...chip(m.momento === mo),
+      padding: "4px 9px",
+      fontSize: 11
+    }
+  }, mo))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement(TextInput, {
+    value: novoMed,
+    onChange: setNovoMed,
+    placeholder: "Juntar \xE0 m\xE3o (nome e dose)"
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      if (!novoMed.trim()) return;
+      setMeds([...meds, {
+        id: uid8(),
+        nome: novoMed.trim(),
+        momento: "Jantar",
+        nota: "",
+        on: true
+      }]);
+      setNovoMed("");
+    },
+    style: {
+      ...ctrlBtn(),
+      width: 46,
+      borderColor: C.teal
+    }
+  }, /*#__PURE__*/React.createElement(Plus, {
+    size: 18,
+    color: C.teal
+  })))), /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: C.heading,
+      marginBottom: 10
+    }
+  }, "An\xE1lises ", params.length ? `(${params.filter(p => p.on).length}/${params.length})` : ""), params.length === 0 && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12.5,
+      color: C.muted,
+      margin: "0 0 10px",
+      lineHeight: 1.5
+    }
+  }, "Nenhum valor encontrado. Podes acrescentar depois em Cl\xEDnico \u2192 An\xE1lises."), params.map(p => {
+    const av = avaliaValor(p.n, p.v);
+    return /*#__PURE__*/React.createElement("div", {
+      key: p.id,
+      style: {
+        padding: "9px 0",
+        borderTop: `1px solid ${C.line}`
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => alternar(params, setParams, p.id),
+      style: {
+        border: "none",
+        background: "transparent",
+        cursor: "pointer",
+        padding: 0
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 22,
+        height: 22,
+        borderRadius: 7,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: `1.5px solid ${p.on ? C.good : C.line}`,
+        background: p.on ? C.good : "transparent"
+      }
+    }, p.on && /*#__PURE__*/React.createElement(Check, {
+      size: 13,
+      color: "#fff",
+      strokeWidth: 3
+    }))), /*#__PURE__*/React.createElement("span", {
+      style: {
+        flex: 1,
+        fontSize: 13,
+        color: C.ink,
+        minWidth: 0
+      }
+    }, p.n), /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 84
+      }
+    }, /*#__PURE__*/React.createElement(TextInput, {
+      value: p.v,
+      onChange: v => editar(params, setParams, p.id, "v", v)
+    })), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 11.5,
+        color: C.muted,
+        width: 46
+      }
+    }, p.u), /*#__PURE__*/React.createElement("button", {
+      onClick: () => remover(params, setParams, p.id),
+      style: iconBtn()
+    }, /*#__PURE__*/React.createElement(X, {
+      size: 15
+    }))), av && av.est !== "normal" && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: av.c,
+        marginTop: 4,
+        marginLeft: 30
+      }
+    }, av.est, " \xB7 refer\xEAncia ", av.m.min, "\u2013", av.m.max, " ", av.m.u));
+  }), params.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement(DateField, {
+    label: "Data das an\xE1lises",
+    value: dataAnalise,
+    onChange: setDataAnalise
+  }))), /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: C.heading,
+      marginBottom: 10
+    }
+  }, "Tratamentos e datas"), /*#__PURE__*/React.createElement(CheckRow, {
+    on: iso.on,
+    onToggle: () => setIso({
+      ...iso,
+      on: !iso.on
+    }),
+    title: "Tratamento prolongado com isotretino\xEDna",
+    sub: "Liga o contador de dose cumulativa e o aviso de an\xE1lises"
+  }), iso.on && /*#__PURE__*/React.createElement("div", {
+    style: {
+      paddingLeft: 4,
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement(DateField, {
+    label: "In\xEDcio",
+    value: iso.inicio,
+    onChange: v => setIso({
+      ...iso,
+      inicio: v
+    })
+  }), /*#__PURE__*/React.createElement(Grid, {
+    cols: 2
+  }, /*#__PURE__*/React.createElement(MiniNum, {
+    label: "mg por dia",
+    value: iso.dose,
+    onChange: v => setIso({
+      ...iso,
+      dose: v
+    })
+  }), /*#__PURE__*/React.createElement(MiniNum, {
+    label: "Meses",
+    value: iso.meses,
+    onChange: v => setIso({
+      ...iso,
+      meses: v
+    })
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 10
+    }
+  }, /*#__PURE__*/React.createElement(CheckRow, {
+    on: cirurgia.on,
+    onToggle: () => setCirurgia({
+      ...cirurgia,
+      on: !cirurgia.on
+    }),
+    title: "Cirurgia recente",
+    sub: "Liga a linha do tempo de recupera\xE7\xE3o"
+  })), cirurgia.on && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement(DateField, {
+    label: "Data da cirurgia",
+    value: cirurgia.data,
+    onChange: v => setCirurgia({
+      ...cirurgia,
+      data: v
+    })
+  }))), /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: C.heading,
+      marginBottom: 10
+    }
+  }, "Dados pessoais"), /*#__PURE__*/React.createElement(DateField, {
+    label: "Data de nascimento",
+    value: pes.nascimento,
+    onChange: v => setPes({
+      ...pes,
+      nascimento: v
+    })
+  }), /*#__PURE__*/React.createElement(Grid, {
+    cols: 2
+  }, /*#__PURE__*/React.createElement(MiniNum, {
+    label: "Peso (kg)",
+    value: pes.peso,
+    onChange: v => setPes({
+      ...pes,
+      peso: v
+    })
+  }), /*#__PURE__*/React.createElement(MiniNum, {
+    label: "Altura (cm)",
+    value: pes.altura,
+    onChange: v => setPes({
+      ...pes,
+      altura: v
+    })
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 14
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 13,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Alergias"), /*#__PURE__*/React.createElement(TextInput, {
+    value: pes.alergias,
+    onChange: v => setPes({
+      ...pes,
+      alergias: v
+    }),
+    placeholder: "ou \xABnenhuma conhecida\xBB"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 13,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Grupo sangu\xEDneo"), /*#__PURE__*/React.createElement(TextInput, {
+    value: pes.sangue,
+    onChange: v => setPes({
+      ...pes,
+      sangue: v
+    }),
+    placeholder: "ex.: A+"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 13,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Contacto de emerg\xEAncia"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1.2
+    }
+  }, /*#__PURE__*/React.createElement(TextInput, {
+    value: contacto.n,
+    onChange: v => setContacto({
+      ...contacto,
+      n: v
+    }),
+    placeholder: "Nome"
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement(TextInput, {
+    value: contacto.tel,
+    onChange: v => setContacto({
+      ...contacto,
+      tel: v
+    }),
+    placeholder: "Telefone"
+  }))))), /*#__PURE__*/React.createElement(PrimaryBtn, {
+    onClick: aplicar
+  }, /*#__PURE__*/React.createElement(Check, {
+    size: 17
+  }), " ", nada ? "Continuar" : "Aplicar e continuar"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11,
+      color: C.muted,
+      marginTop: 12,
+      lineHeight: 1.5,
+      textAlign: "center"
+    }
+  }, "Podes mudar tudo isto depois em Cl\xEDnico \u2192 Dados."));
+}
+
+/* ---- Anexar documentos ---- */
+function AnexarDocumentos({
+  onProposta,
+  flash
+}) {
+  const ref = useRef();
+  const [estado, setEstado] = useState("");
+  const [prog, setProg] = useState(0);
+  const [feitos, setFeitos] = useState([]);
+  const [proposta, setProposta] = useState(null);
+  const processar = async files => {
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      setEstado(`A ler ${f.name || "documento"}…`);
+      setProg(0);
+      try {
+        const url = await readImage(f, 1800, 0.92);
+        const txt = await lerImagem(url, setProg);
+        const p = extrairDeTexto(txt);
+        setProposta(ant => fundirPropostas(ant, p));
+        setFeitos(l => [...l, {
+          nome: f.name || `documento ${l.length + 1}`,
+          meds: p.meds.length,
+          params: p.params.length
+        }]);
+      } catch (e) {
+        flash("Não consegui ler esse ficheiro" + (e && /rede/.test(e.message) ? " — precisa de internet da primeira vez" : ""));
+      }
+    }
+    setEstado("");
+    setProg(0);
+  };
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Camera, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Receitas, relat\xF3rios de an\xE1lises, notas de alta. A leitura \xE9 feita dentro do teu telem\xF3vel \u2014 os documentos n\xE3o s\xE3o enviados para lado nenhum."
+  }, "Anexar documentos"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => ref.current && ref.current.click(),
+    style: {
+      width: "100%",
+      border: `1.5px dashed ${C.teal}`,
+      background: C.tealSoft,
+      color: C.teal,
+      borderRadius: 16,
+      padding: "26px 16px",
+      cursor: "pointer",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 8,
+      fontSize: 13.5,
+      fontWeight: 600
+    }
+  }, /*#__PURE__*/React.createElement(Camera, {
+    size: 26
+  }), " Fotografar ou escolher imagens"), /*#__PURE__*/React.createElement("input", {
+    ref: ref,
+    type: "file",
+    accept: "image/*",
+    multiple: true,
+    onChange: e => {
+      if (e.target.files?.length) processar(e.target.files);
+      e.target.value = "";
+    },
+    style: {
+      display: "none"
+    }
+  }), estado && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12.5,
+      color: C.muted,
+      marginBottom: 6
+    }
+  }, estado, " ", prog ? `${prog}%` : ""), /*#__PURE__*/React.createElement(Progress, {
+    pct: prog,
+    color: C.teal
+  })), feitos.map((f, i) => /*#__PURE__*/React.createElement(Row, {
+    key: i,
+    left: /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 12.5,
+        color: C.ink
+      }
+    }, f.nome),
+    right: /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 11.5,
+        color: C.muted
+      }
+    }, f.meds, " medicamento(s) \xB7 ", f.params, " valor(es)")
+  })), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11.5,
+      color: C.muted,
+      marginTop: 14,
+      lineHeight: 1.55
+    }
+  }, "S\xF3 imagens \u2014 se tiveres um PDF, tira-lhe uma fotografia ou uma captura de ecr\xE3. Documentos impressos leem-se bem; letra manuscrita n\xE3o se l\xEA, e isso escreves \xE0 m\xE3o a seguir.")), proposta && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(PrimaryBtn, {
+    onClick: () => onProposta(proposta)
+  }, /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 17
+  }), " Ver o que li (", proposta.meds.length, " medicamento(s), ", proposta.params.length, " valor(es))")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement(GhostBtn, {
+    onClick: () => onProposta(PROPOSTA_VAZIA)
+  }, "Prefiro preencher \xE0 m\xE3o")));
+}
+function ReconfigurarPorDocumentos(props) {
+  const {
+    cfg,
+    saveCfg,
+    proto,
+    saveProto,
+    analyses,
+    saveAnalyses,
+    flash
+  } = props;
+  const [fase, setFase] = useState("fechado");
+  const [proposta, setProposta] = useState(null);
+  const [comDocs, setComDocs] = useState(false);
+  if (fase === "fechado") {
+    return /*#__PURE__*/React.createElement(Card, {
+      style: {
+        marginTop: 16,
+        padding: 16
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => setFase("anexar"),
+      style: {
+        border: "none",
+        background: "transparent",
+        color: C.teal,
+        fontSize: 13.5,
+        fontWeight: 700,
+        cursor: "pointer",
+        padding: 0,
+        display: "flex",
+        alignItems: "center",
+        gap: 6
+      }
+    }, /*#__PURE__*/React.createElement(Camera, {
+      size: 15
+    }), " Configurar a partir de documentos"), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: 11.5,
+        color: C.muted,
+        margin: "8px 0 0",
+        lineHeight: 1.5
+      }
+    }, "Fotografa uma receita nova ou umas an\xE1lises e a app prop\xF5e o que mudar. A leitura \xE9 feita dentro do telem\xF3vel."));
+  }
+  if (fase === "anexar") {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 16
+      }
+    }, /*#__PURE__*/React.createElement(AnexarDocumentos, {
+      flash: flash,
+      onProposta: p => {
+        setProposta(p);
+        setComDocs(p !== PROPOSTA_VAZIA);
+        setFase("rever");
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 12
+      }
+    }, /*#__PURE__*/React.createElement(GhostBtn, {
+      onClick: () => setFase("fechado")
+    }, "Cancelar")));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(RevisaoConfig, {
+    proposta: proposta || PROPOSTA_VAZIA,
+    cfg: cfg,
+    saveCfg: saveCfg,
+    proto: proto,
+    saveProto: saveProto,
+    analyses: analyses,
+    saveAnalyses: saveAnalyses,
+    flash: flash,
+    comDocumentos: comDocs,
+    onConcluir: () => setFase("fechado")
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement(GhostBtn, {
+    onClick: () => setFase("fechado")
+  }, "Cancelar")));
 }
 
 /* ---------------- Ecrãs de autenticação + Root ---------------- */
