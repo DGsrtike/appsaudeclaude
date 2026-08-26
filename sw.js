@@ -1,5 +1,5 @@
 /* Service worker — «A minha recuperação» */
-const VERSAO = "1787745564819";
+const VERSAO = "__VERSAO__";
 const CACHE = "recup-" + VERSAO;
 const ESTADO = "recup-estado";
 
@@ -73,6 +73,20 @@ async function verificar() {
   });
 }
 
+
+/* ---- Web Push: chega mesmo com a app fechada ---- */
+self.addEventListener("push", (e) => {
+  let d = { titulo: "A minha recuperação", corpo: "Tens algo por fazer." };
+  try { if (e.data) d = Object.assign(d, e.data.json()); } catch (er) { try { d.corpo = e.data.text(); } catch (er2) {} }
+  e.waitUntil(self.registration.showNotification(d.titulo, {
+    body: d.corpo, tag: d.tag || "push", icon: d.icon, badge: d.icon,
+    data: { url: d.url || "./" }, requireInteraction: !!d.fixa,
+  }));
+});
+self.addEventListener("pushsubscriptionchange", (e) => {
+  e.waitUntil(self.clients.matchAll({ includeUncontrolled: true }).then((cs) => cs.forEach((c) => c.postMessage({ tipo: "resubscrever" }))));
+});
+
 self.addEventListener("periodicsync", (e) => { if (e.tag === "verificar-protocolo") e.waitUntil(verificar()); });
 self.addEventListener("sync", (e) => { if (e.tag === "verificar-protocolo") e.waitUntil(verificar()); });
 
@@ -80,8 +94,9 @@ self.addEventListener("notificationclick", (e) => {
   e.notification.close();
   e.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((cs) => {
+      const url = (e.notification.data && e.notification.data.url) || "./";
       for (const c of cs) if ("focus" in c) return c.focus();
-      if (self.clients.openWindow) return self.clients.openWindow("./");
+      if (self.clients.openWindow) return self.clients.openWindow(url);
     })
   );
 });
