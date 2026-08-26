@@ -1,5 +1,5 @@
 /* Service worker — «A minha recuperação» */
-const VERSAO = "__VERSAO__";
+const VERSAO = "1787752259710";
 const CACHE = "recup-" + VERSAO;
 const ESTADO = "recup-estado";
 
