@@ -841,49 +841,59 @@ const Mic = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.crea
   x2: "16",
   y2: "22"
 }));
+const Search = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.createElement("circle", {
+  cx: "11",
+  cy: "11",
+  r: "7"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "16.2",
+  y1: "16.2",
+  x2: "21",
+  y2: "21"
+}));
 
 /* ----------------------------- Temas ----------------------------- */
 const LIGHT = {
-  bg: "#F2F0F7",
+  bg: "#F4F3F8",
   surface: "#FFFFFF",
-  primary: "#453C7A",
+  primary: "#4B3FCF",
   onPrimary: "#FFFFFF",
-  heading: "#2C2748",
-  deep: "#2C2748",
-  teal: "#6C5CE0",
-  tealSoft: "#ECE9FB",
-  amber: "#E07A54",
-  amberSoft: "#FBEBE2",
-  good: "#2FA98C",
-  goodSoft: "#E1F3EE",
-  ink: "#272433",
-  muted: "#6E6A7C",
-  line: "#E7E3F0",
+  heading: "#1C1930",
+  deep: "#1C1930",
+  teal: "#7361F5",
+  tealSoft: "#EDEAFE",
+  amber: "#D9822B",
+  amberSoft: "#FBEEDE",
+  good: "#0FA37C",
+  goodSoft: "#E1F4EE",
+  ink: "#24223A",
+  muted: "#6E6C88",
+  line: "#E8E5F1",
   input: "#F8F7FC",
-  track: "#ECEAF4",
-  warn: "#C6553A",
-  shadow: "0 2px 12px rgba(44,39,72,0.07)"
+  track: "#ECEAF5",
+  warn: "#CE4638",
+  shadow: "0 1px 2px rgba(22,18,48,0.04), 0 10px 28px -14px rgba(22,18,48,0.20)"
 };
 const DARK = {
-  bg: "#121022",
-  surface: "#1D1934",
-  primary: "#7C6FE8",
-  onPrimary: "#0E0B1C",
-  heading: "#EDEAFB",
-  deep: "#EDEAFB",
-  teal: "#9B8BFF",
-  tealSoft: "#2A2450",
-  amber: "#E89A72",
-  amberSoft: "#3A2A20",
-  good: "#4FC2A5",
-  goodSoft: "#1B3B34",
-  ink: "#E7E4F4",
-  muted: "#948FAE",
-  line: "#2C2750",
-  input: "#171331",
-  track: "#241F42",
-  warn: "#E8896B",
-  shadow: "0 3px 16px rgba(0,0,0,0.42)"
+  bg: "#0D0C16",
+  surface: "#191826",
+  primary: "#8878FF",
+  onPrimary: "#0D0C16",
+  heading: "#F0EEFB",
+  deep: "#F0EEFB",
+  teal: "#A395FF",
+  tealSoft: "#262340",
+  amber: "#E9A25C",
+  amberSoft: "#3B2A19",
+  good: "#3CC7A0",
+  goodSoft: "#123329",
+  ink: "#E3E1F1",
+  muted: "#9793B2",
+  line: "#2A2740",
+  input: "#141322",
+  track: "#232135",
+  warn: "#EF6E5D",
+  shadow: "0 2px 4px rgba(0,0,0,0.32), 0 14px 34px -14px rgba(0,0,0,0.65)"
 };
 let C = LIGHT;
 function applyTheme(mode) {
@@ -2687,9 +2697,10 @@ function Card({
   style
 }) {
   return /*#__PURE__*/React.createElement("div", {
+    className: "cartao",
     style: {
       background: C.surface,
-      borderRadius: 20,
+      borderRadius: 22,
       padding: 20,
       boxShadow: C.shadow,
       border: `1px solid ${C.line}`,
@@ -2710,13 +2721,13 @@ function SectionTitle({
     style: {
       display: "flex",
       alignItems: "center",
-      gap: 10
+      gap: 11
     }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
-      width: 34,
-      height: 34,
-      borderRadius: 10,
+      width: 36,
+      height: 36,
+      borderRadius: 12,
       background: C.tealSoft,
       display: "flex",
       alignItems: "center",
@@ -2726,10 +2737,11 @@ function SectionTitle({
   }, icon), /*#__PURE__*/React.createElement("h2", {
     style: {
       fontFamily: SERIF,
-      fontSize: 20,
+      fontSize: 20.5,
       color: C.heading,
       margin: 0,
-      fontWeight: 600
+      fontWeight: 600,
+      letterSpacing: -0.2
     }
   }, children)), hint && /*#__PURE__*/React.createElement("p", {
     style: {
@@ -2754,10 +2766,11 @@ function PrimaryBtn({
       borderRadius: 12,
       border: "none",
       cursor: disabled ? "default" : "pointer",
-      background: disabled ? C.tealSoft : C.primary,
+      background: disabled ? C.track : C.primary,
       color: disabled ? C.muted : C.onPrimary,
       fontSize: 15,
-      fontWeight: 600,
+      fontWeight: 650,
+      boxShadow: disabled ? "none" : `0 6px 18px -8px ${C.primary}`,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -3164,6 +3177,7 @@ function Tracker({
   const [loaded, setLoaded] = useState(false);
   const [flash, setFlash] = useState("");
   const [destrancado, setDestrancado] = useState(false);
+  const [pesquisa, setPesquisa] = useState(false);
   useEffect(() => {
     (async () => {
       const parse = (s, fb) => {
@@ -3265,6 +3279,11 @@ function Tracker({
     registarSW();
   }, []);
   useEffect(() => {
+    try {
+      document.body.style.zoom = String(cfg.escalaTexto || 1);
+    } catch (e) {}
+  }, [cfg.escalaTexto]);
+  useEffect(() => {
     if (loaded && cfg.lembretes && cfg.lembretes.on) agendarGatilhos(proto, cfg);
   }, [loaded, proto.itens, cfg.lembretes]); // eslint-disable-line
   useEffect(() => {
@@ -3341,7 +3360,9 @@ function Tracker({
     flash: showFlash,
     img: imgApi,
     alertas,
-    setTab
+    setTab,
+    tema: theme,
+    onToggleTheme
   };
   if (loaded && cfg.pin && !destrancado) return /*#__PURE__*/React.createElement(EcraPIN, {
     cfg: cfg,
@@ -3369,7 +3390,9 @@ function Tracker({
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      background: `linear-gradient(160deg, ${C.tealSoft} 0%, ${C.bg} 62%)`
+      background: `linear-gradient(165deg, ${C.tealSoft} 0%, ${C.bg} 58%)`,
+      borderBottomLeftRadius: 26,
+      borderBottomRightRadius: 26
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -3424,6 +3447,13 @@ function Tracker({
       marginTop: 6
     }
   }, /*#__PURE__*/React.createElement(SyncPill, null))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setPesquisa(true),
+    "aria-label": "Procurar",
+    style: ctrlBtn()
+  }, /*#__PURE__*/React.createElement(Search, {
+    size: 17,
+    color: C.muted
+  })), /*#__PURE__*/React.createElement("button", {
     onClick: onToggleTheme,
     "aria-label": "Tema",
     style: ctrlBtn()
@@ -3502,13 +3532,14 @@ function Tracker({
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         position: "relative",
-        width: 40,
-        height: 28,
-        borderRadius: 10,
+        width: 42,
+        height: 30,
+        borderRadius: 12,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: active ? C.tealSoft : "transparent"
+        background: active ? C.tealSoft : "transparent",
+        transition: "background .2s ease"
       }
     }, /*#__PURE__*/React.createElement(Icon, {
       size: 18
@@ -3535,7 +3566,10 @@ function Tracker({
         fontWeight: active ? 700 : 500
       }
     }, t.label));
-  }))), flash && /*#__PURE__*/React.createElement("div", {
+  }))), pesquisa && /*#__PURE__*/React.createElement(Pesquisa, {
+    D: shared,
+    onFechar: () => setPesquisa(false)
+  }), flash && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
       bottom: "calc(env(safe-area-inset-bottom) + 82px)",
@@ -3727,11 +3761,13 @@ function Diario({
   })();
   const pendentes = ativos.filter(i => i.momento === proximoMomento && doneHoje.indexOf(i.id) < 0);
   const horaDeitar = f.acordar ? minusHours(f.acordar, (cfg.sonoAlvo || 8) + 0.25) : null;
-  return /*#__PURE__*/React.createElement("div", null, M(cfg, "clima") && /*#__PURE__*/React.createElement(CardClima, {
+  const B = {};
+  B.clima = /*#__PURE__*/React.createElement(React.Fragment, null, M(cfg, "clima") && /*#__PURE__*/React.createElement(CardClima, {
     cfg: cfg,
     saveCfg: saveCfg,
     days: days
-  }), /*#__PURE__*/React.createElement(CardHoje, {
+  }));
+  B.hoje = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(CardHoje, {
     days: days,
     saveDays: saveDays,
     proto: proto,
@@ -3741,7 +3777,8 @@ function Diario({
     analyses: analyses,
     flash: flash,
     setTab: setTab
-  }), /*#__PURE__*/React.createElement(Card, {
+  }));
+  B.prontidao = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Card, {
     style: {
       marginBottom: 14,
       background: `linear-gradient(155deg, ${C.surface}, ${band.c}14)`
@@ -3862,7 +3899,8 @@ function Diario({
     color: band.c,
     w: 150,
     h: 30
-  }))), sem && M(cfg, "treino") && /*#__PURE__*/React.createElement(Card, {
+  }))));
+  B.semaforo = /*#__PURE__*/React.createElement(React.Fragment, null, sem && M(cfg, "treino") && /*#__PURE__*/React.createElement(Card, {
     style: {
       marginBottom: 14,
       padding: 16,
@@ -3898,7 +3936,8 @@ function Diario({
       margin: "8px 0 0",
       lineHeight: 1.45
     }
-  }, "Sugest\xE3o da app, n\xE3o do teu treinador. Se ele mandar outra coisa, o plano dele ganha \u2014 mas mostra-lhe isto.")), alertas.filter(a => a.sev === "alta").slice(0, 2).map((a, i) => /*#__PURE__*/React.createElement("button", {
+  }, "Sugest\xE3o da app, n\xE3o do teu treinador. Se ele mandar outra coisa, o plano dele ganha \u2014 mas mostra-lhe isto.")));
+  B.alertas = /*#__PURE__*/React.createElement(React.Fragment, null, alertas.filter(a => a.sev === "alta").slice(0, 2).map((a, i) => /*#__PURE__*/React.createElement("button", {
     key: i,
     onClick: () => setTab("insights"),
     style: {
@@ -3928,7 +3967,8 @@ function Diario({
   }, a.t), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 16,
     color: C.warn
-  }))), M(cfg, "protocolo") && pendentes.length > 0 && /*#__PURE__*/React.createElement(Card, {
+  }))));
+  B.protoAgora = /*#__PURE__*/React.createElement(React.Fragment, null, M(cfg, "protocolo") && pendentes.length > 0 && /*#__PURE__*/React.createElement(Card, {
     style: {
       marginBottom: 14,
       padding: 16
@@ -3959,7 +3999,8 @@ function Diario({
     onToggle: () => toggleProto(it.id),
     title: it.nome,
     sub: it.nota
-  }))), /*#__PURE__*/React.createElement("div", {
+  }))));
+  B.formulario = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -4290,36 +4331,44 @@ function Diario({
     onClick: save
   }, /*#__PURE__*/React.createElement(Check, {
     size: 17
-  }), " Guardar ", mode === "manha" ? "manhã" : "tarde"))), /*#__PURE__*/React.createElement(CardPrevisao, {
+  }), " Guardar ", mode === "manha" ? "manhã" : "tarde"))));
+  B.previsao = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(CardPrevisao, {
     days: days,
     cfg: cfg
-  }), /*#__PURE__*/React.createElement(NoiteMa, {
+  }));
+  B.noiteMa = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(NoiteMa, {
     days: days,
     cfg: cfg
-  }), M(cfg, "treino") && /*#__PURE__*/React.createElement(JanelaRecuperacao, {
+  }));
+  B.recuperacao = /*#__PURE__*/React.createElement(React.Fragment, null, M(cfg, "treino") && /*#__PURE__*/React.createElement(JanelaRecuperacao, {
     days: days,
     saveDays: saveDays,
     flash: flash
-  }), M(cfg, "habitos") && /*#__PURE__*/React.createElement(Habitos, {
+  }));
+  B.habitos = /*#__PURE__*/React.createElement(React.Fragment, null, M(cfg, "habitos") && /*#__PURE__*/React.createElement(Habitos, {
     days: days,
     saveDays: saveDays,
     cfg: cfg,
     saveCfg: saveCfg,
     flash: flash
-  }), /*#__PURE__*/React.createElement(OrcamentoDia, {
+  }));
+  B.orcamento = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(OrcamentoDia, {
     days: days,
     cfg: cfg,
     saveCfg: saveCfg
-  }), /*#__PURE__*/React.createElement(DiaMau, {
+  }));
+  B.diamau = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(DiaMau, {
     days: days,
     saveDays: saveDays,
     flash: flash
-  }), /*#__PURE__*/React.createElement(ModoCama, {
+  }));
+  B.cama = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ModoCama, {
     days: days,
     saveDays: saveDays,
     cfg: cfg,
     flash: flash
-  }), sono.n >= 2 && /*#__PURE__*/React.createElement(Card, {
+  }));
+  B.sono = /*#__PURE__*/React.createElement(React.Fragment, null, sono.n >= 2 && /*#__PURE__*/React.createElement(Card, {
     style: {
       marginTop: 18
     }
@@ -4365,7 +4414,8 @@ function Diario({
     style: {
       color: C.heading
     }
-  }, sono.regularidade, " min"), " entre noites. Abaixo de 45 min \xE9 excelente.")), recent.length > 0 && /*#__PURE__*/React.createElement(Card, {
+  }, sono.regularidade, " min"), " entre noites. Abaixo de 45 min \xE9 excelente.")));
+  B.recentes = /*#__PURE__*/React.createElement(React.Fragment, null, recent.length > 0 && /*#__PURE__*/React.createElement(Card, {
     style: {
       marginTop: 18
     }
@@ -4383,7 +4433,7 @@ function Diario({
       fontWeight: 700
     }
   }, "\xDAltimos dias")), recent.map(k => {
-    const m = days[k]?.morning || {};
+    const m = days[k] && days[k].morning || {};
     const rs = readinessScore(m, baseHR, extra);
     const cg = cargaDoDia(days[k]);
     return /*#__PURE__*/React.createElement("div", {
@@ -4432,6 +4482,11 @@ function Diario({
       size: 15
     })));
   })));
+  const ordem = ordemDiario(cfg);
+  const escondidos = cfg.diarioOff || [];
+  return /*#__PURE__*/React.createElement("div", null, ordem.filter(id => escondidos.indexOf(id) < 0 && B[id]).map(id => /*#__PURE__*/React.createElement(React.Fragment, {
+    key: id
+  }, B[id])));
 }
 
 /* ------------------------------ TREINO --------------------------- */
@@ -6758,14 +6813,7 @@ function Config(props) {
       color: C.teal
     }),
     hint: "Datas e valores que a app usa para calcular tudo o resto: dose cumulativa, contadores, alvos e alertas."
-  }, "Os meus dados"), /*#__PURE__*/React.createElement(EscolhaCor, {
-    cfg: cfg,
-    saveCfg: saveCfg,
-    onMudou: () => {
-      forcar(x => x + 1);
-      flash("Cor aplicada");
-    }
-  }), /*#__PURE__*/React.createElement(DateField, {
+  }, "Os meus dados"), /*#__PURE__*/React.createElement(DateField, {
     label: "Data de nascimento",
     value: c.nascimento,
     onChange: v => set("nascimento", v)
@@ -6780,7 +6828,16 @@ function Config(props) {
     cfg: cfg,
     saveCfg: saveCfg,
     flash: flash
-  }), /*#__PURE__*/React.createElement(ReconfigurarPorDocumentos, props), /*#__PURE__*/React.createElement(NumField, {
+  }), /*#__PURE__*/React.createElement(ReconfigurarPorDocumentos, props), /*#__PURE__*/React.createElement(Aparencia, {
+    cfg: cfg,
+    saveCfg: saveCfg,
+    flash: flash,
+    tema: props.tema,
+    onToggleTheme: props.onToggleTheme
+  }), /*#__PURE__*/React.createElement(OrganizarDiario, {
+    cfg: cfg,
+    saveCfg: saveCfg
+  }), /*#__PURE__*/React.createElement(NumField, {
     label: "Peso de refer\xEAncia",
     value: c.peso,
     onChange: v => set("peso", v),
@@ -7024,7 +7081,13 @@ function Insights(D) {
       color: C.teal
     }),
     hint: "Resumo autom\xE1tico dos \xFAltimos 7 dias, escrito como se fosse uma nota de acompanhamento."
-  }, "A tua semana"), brief.map((l, i) => /*#__PURE__*/React.createElement("p", {
+  }, "A tua semana"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement(BotaoOuvir, {
+    texto: brief.join(". ")
+  })), brief.map((l, i) => /*#__PURE__*/React.createElement("p", {
     key: i,
     style: {
       fontSize: l.startsWith("→") ? 14 : 13.5,
@@ -8969,13 +9032,22 @@ function ModoConsulta(D) {
     }
   }, l[1]))), /*#__PURE__*/React.createElement("div", {
     style: {
-      marginTop: 16
+      marginTop: 16,
+      display: "flex",
+      gap: 10,
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
     }
   }, /*#__PURE__*/React.createElement(GhostBtn, {
     onClick: copiar
   }, /*#__PURE__*/React.createElement(Copy, {
     size: 15
-  }), " Copiar resumo"))), r.perguntas.length > 0 && /*#__PURE__*/React.createElement(Card, {
+  }), " Copiar resumo")), /*#__PURE__*/React.createElement(BotaoOuvir, {
+    texto: r.linhas.map(l => `${l[0]}: ${l[1]}`).join(". ")
+  }))), r.perguntas.length > 0 && /*#__PURE__*/React.createElement(Card, {
     style: {
       marginTop: 16
     }
@@ -9219,70 +9291,122 @@ function Avisos({
 
 /* ------------------------ Cor de destaque ------------------------ */
 const ACENTOS = {
-  roxo: {
-    nome: "Roxo",
+  violeta: {
+    nome: "Violeta",
     L: {
-      primary: "#453C7A",
-      teal: "#6C5CE0",
-      tealSoft: "#ECE9FB"
+      primary: "#4B3FCF",
+      teal: "#7361F5",
+      tealSoft: "#EDEAFE"
     },
     D: {
-      primary: "#7C6FE8",
-      teal: "#9B8BFF",
-      tealSoft: "#2A2450"
+      primary: "#8878FF",
+      teal: "#A395FF",
+      tealSoft: "#262340"
     }
   },
-  mar: {
-    nome: "Azul-mar",
+  oceano: {
+    nome: "Oceano",
     L: {
-      primary: "#0F4C64",
-      teal: "#0E8FA8",
-      tealSoft: "#E0F2F6"
+      primary: "#0D5E7A",
+      teal: "#0E93B0",
+      tealSoft: "#E0F2F7"
     },
     D: {
-      primary: "#3EA9C4",
-      teal: "#5FC7DE",
-      tealSoft: "#123945"
+      primary: "#3BA9C6",
+      teal: "#5DC6DE",
+      tealSoft: "#0F3341"
     }
   },
-  verde: {
-    nome: "Verde",
+  floresta: {
+    nome: "Floresta",
     L: {
-      primary: "#1F5D4C",
-      teal: "#2FA98C",
-      tealSoft: "#E1F3EE"
+      primary: "#14604A",
+      teal: "#219A78",
+      tealSoft: "#E0F2EC"
     },
     D: {
-      primary: "#3FBF9C",
-      teal: "#5FD3B4",
-      tealSoft: "#14382F"
+      primary: "#3EBE96",
+      teal: "#5FD3AF",
+      tealSoft: "#123328"
     }
   },
-  fogo: {
-    nome: "Laranja",
+  coral: {
+    nome: "Coral",
     L: {
-      primary: "#8A3D22",
-      teal: "#D2653A",
-      tealSoft: "#FBEBE2"
+      primary: "#A63552",
+      teal: "#DD5C77",
+      tealSoft: "#FCE9EE"
     },
     D: {
-      primary: "#E08A5E",
-      teal: "#EFA277",
-      tealSoft: "#3E2418"
+      primary: "#E97A93",
+      teal: "#F293A7",
+      tealSoft: "#3A1B25"
+    }
+  },
+  grafite: {
+    nome: "Grafite",
+    L: {
+      primary: "#2C2E3D",
+      teal: "#5C6079",
+      tealSoft: "#EDEEF3"
+    },
+    D: {
+      primary: "#9CA1BC",
+      teal: "#B4B8CE",
+      tealSoft: "#262835"
     }
   }
 };
-function aplicarCor(nome) {
-  const a = ACENTOS[nome] || ACENTOS.roxo;
-  Object.assign(LIGHT, a.L);
-  Object.assign(DARK, a.D);
+const BASE_L = {
+    ...LIGHT
+  },
+  BASE_D = {
+    ...DARK
+  };
+const CONTRASTE = {
+  L: {
+    ink: "#100E1E",
+    heading: "#0B0918",
+    muted: "#4E4C63",
+    line: "#C9C5DC",
+    track: "#DCD8EA"
+  },
+  D: {
+    ink: "#FFFFFF",
+    heading: "#FFFFFF",
+    muted: "#C3BFDC",
+    line: "#4A4667",
+    track: "#33304A"
+  }
+};
+function aplicarVisual(cor, contraste) {
+  const a = ACENTOS[cor] || ACENTOS.violeta;
+  Object.assign(LIGHT, BASE_L, a.L, contraste ? CONTRASTE.L : {});
+  Object.assign(DARK, BASE_D, a.D, contraste ? CONTRASTE.D : {});
   try {
-    localStorage.setItem("ui:cor", nome);
+    localStorage.setItem("ui:cor", cor);
+    localStorage.setItem("ui:contraste", contraste ? "1" : "");
   } catch (e) {}
 }
+function corAtual() {
+  try {
+    return localStorage.getItem("ui:cor") || "violeta";
+  } catch (e) {
+    return "violeta";
+  }
+}
+function contrasteAtual() {
+  try {
+    return !!localStorage.getItem("ui:contraste");
+  } catch (e) {
+    return false;
+  }
+}
+function aplicarCor(nome) {
+  aplicarVisual(nome, contrasteAtual());
+}
 try {
-  const c = localStorage.getItem("ui:cor");
-  if (c && ACENTOS[c]) aplicarCor(c);
+  aplicarVisual(corAtual(), contrasteAtual());
 } catch (e) {}
 
 /* --------------------------- XP e níveis ------------------------- */
@@ -19023,6 +19147,641 @@ function ReconfigurarPorDocumentos(props) {
   }, /*#__PURE__*/React.createElement(GhostBtn, {
     onClick: () => setFase("fechado")
   }, "Cancelar")));
+}
+
+/* ================================================================ */
+/*        v14 — desenho, acessibilidade, pesquisa, voz               */
+/* ================================================================ */
+
+/* ------------------------ Estilos globais ------------------------ */
+let _cssPosto = false;
+function porEstilosGlobais() {
+  if (_cssPosto || typeof document === "undefined") return;
+  _cssPosto = true;
+  const st = document.createElement("style");
+  st.textContent = `
+    * { -webkit-tap-highlight-color: transparent; }
+    @keyframes surge { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    @keyframes aparece { from { opacity: 0; } to { opacity: 1; } }
+    .cartao { animation: surge .34s cubic-bezier(.22,.9,.3,1) both; }
+    button { font-family: inherit; transition: transform .12s ease, opacity .12s ease, background .18s ease, border-color .18s ease; }
+    button:active { transform: scale(.975); }
+    input, textarea, select { transition: border-color .16s ease, box-shadow .16s ease; }
+    input:focus, textarea:focus, select:focus { outline: none; }
+    ::selection { background: rgba(115,97,245,.22); }
+    input[type=range] { height: 26px; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(130,125,165,.35); border-radius: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    @media (prefers-reduced-motion: reduce) { .cartao { animation: none; } button:active { transform: none; } }
+  `;
+  document.head.appendChild(st);
+}
+porEstilosGlobais();
+
+/* --------------------------- Ler em voz -------------------------- */
+function podeFalar() {
+  return typeof window !== "undefined" && "speechSynthesis" in window;
+}
+function falar(txt, onFim) {
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(String(txt).replace(/·/g, ",").replace(/→/g, ""));
+    u.lang = "pt-PT";
+    u.rate = 0.98;
+    u.pitch = 1;
+    const vs = window.speechSynthesis.getVoices();
+    const pt = vs.find(v => /pt[-_]PT/i.test(v.lang)) || vs.find(v => /^pt/i.test(v.lang));
+    if (pt) u.voice = pt;
+    u.onend = () => onFim && onFim();
+    window.speechSynthesis.speak(u);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+function BotaoOuvir({
+  texto
+}) {
+  const [aFalar, setAFalar] = useState(false);
+  if (!podeFalar()) return null;
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      if (aFalar) {
+        window.speechSynthesis.cancel();
+        setAFalar(false);
+      } else {
+        setAFalar(true);
+        falar(texto, () => setAFalar(false));
+      }
+    },
+    style: {
+      ...chip(aFalar),
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 6,
+      fontSize: 12.5,
+      padding: "7px 13px"
+    }
+  }, aFalar ? /*#__PURE__*/React.createElement(X, {
+    size: 14
+  }) : /*#__PURE__*/React.createElement(Mic, {
+    size: 14
+  }), " ", aFalar ? "Parar" : "Ouvir");
+}
+
+/* -------------------------- Pesquisa global ---------------------- */
+function pesquisar(q, D) {
+  const t = normTxt(q).trim();
+  if (t.length < 2) return [];
+  const R = [];
+  const bate = x => x && normTxt(x).indexOf(t) >= 0;
+  const {
+    days,
+    analyses,
+    agenda,
+    proto,
+    strength,
+    cfg
+  } = D;
+  Object.keys(days).sort().reverse().forEach(k => {
+    const d = days[k],
+      m = d.morning || {},
+      e = d.evening || {};
+    if (bate(e.nota)) R.push({
+      tipo: "Nota",
+      data: k,
+      txt: e.nota,
+      tab: "diario"
+    });
+    if (bate(e.dor)) R.push({
+      tipo: "Dor",
+      data: k,
+      txt: e.dor,
+      tab: "corpo"
+    });
+    if (bate(e.estado)) R.push({
+      tipo: "Estado do dia",
+      data: k,
+      txt: e.estado,
+      tab: "diario"
+    });
+    (m.sintomas || []).forEach(sx => {
+      if (bate(sx)) R.push({
+        tipo: "Sintoma",
+        data: k,
+        txt: sx,
+        tab: "clinico"
+      });
+    });
+    (e.fatores || []).forEach(fx => {
+      if (bate(fx)) R.push({
+        tipo: "Fator do dia",
+        data: k,
+        txt: fx,
+        tab: "diario"
+      });
+    });
+    if (d.body && bate(d.body.notas)) R.push({
+      tipo: "Nota do físico",
+      data: k,
+      txt: d.body.notas,
+      tab: "corpo"
+    });
+    if (d.pele && bate(d.pele.notas)) R.push({
+      tipo: "Pele",
+      data: k,
+      txt: d.pele.notas,
+      tab: "corpo"
+    });
+  });
+  (analyses || []).forEach(a => {
+    if (bate(a.notas) || bate(a.tipo)) R.push({
+      tipo: "Análise",
+      data: a.date,
+      txt: `${a.tipo}${a.notas ? " — " + a.notas : ""}`,
+      tab: "clinico"
+    });
+    (a.params || []).forEach(p => {
+      if (bate(p.n)) R.push({
+        tipo: "Valor",
+        data: a.date,
+        txt: `${p.n}: ${p.v} ${p.u || ""}`,
+        tab: "clinico"
+      });
+    });
+  });
+  (agenda.perguntas || []).forEach(p => {
+    if (bate(p.txt)) R.push({
+      tipo: "Pergunta",
+      data: p.criada,
+      txt: `${p.txt} (${p.para})`,
+      tab: "clinico"
+    });
+  });
+  (agenda.consultas || []).forEach(c => {
+    if (bate(c.quem) || bate(c.local)) R.push({
+      tipo: "Consulta",
+      data: c.date,
+      txt: `${c.quem}${c.local ? " · " + c.local : ""}`,
+      tab: "clinico"
+    });
+  });
+  (agenda.testes || []).forEach(x => {
+    if (bate(x.materia)) R.push({
+      tipo: "Escola",
+      data: x.date,
+      txt: `${x.materia} (${x.tipo})`,
+      tab: "treino"
+    });
+  });
+  (proto.itens || []).forEach(i => {
+    if (bate(i.nome) || bate(i.nota)) R.push({
+      tipo: "Medicação",
+      data: "",
+      txt: `${i.nome} · ${i.momento}`,
+      tab: "clinico"
+    });
+  });
+  (strength || []).forEach(sx => {
+    if (bate(sx.ex)) R.push({
+      tipo: "Força",
+      data: sx.date,
+      txt: `${sx.ex} ${sx.peso} kg`,
+      tab: "treino"
+    });
+  });
+  (cfg.stock || []).forEach(sx => {
+    if (bate(sx.nome)) R.push({
+      tipo: "Stock",
+      data: "",
+      txt: sx.nome,
+      tab: "clinico"
+    });
+  });
+  return R.slice(0, 40);
+}
+function Pesquisa({
+  D,
+  onFechar
+}) {
+  const [q, setQ] = useState("");
+  const res = useMemo(() => pesquisar(q, D), [q]); // eslint-disable-line
+  const grupos = {};
+  res.forEach(r => {
+    (grupos[r.tipo] = grupos[r.tipo] || []).push(r);
+  });
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 80,
+      background: C.bg,
+      overflowY: "auto",
+      animation: "aparece .18s ease"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      maxWidth: 560,
+      margin: "0 auto",
+      padding: "calc(env(safe-area-inset-top) + 16px) 16px 40px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10,
+      alignItems: "center",
+      marginBottom: 18
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    autoFocus: true,
+    value: q,
+    onChange: e => setQ(e.target.value),
+    placeholder: "Procurar em tudo\u2026",
+    style: {
+      width: "100%",
+      boxSizing: "border-box",
+      border: `1px solid ${C.line}`,
+      borderRadius: 14,
+      padding: "13px 15px",
+      fontSize: 16,
+      background: C.surface,
+      color: C.ink,
+      fontFamily: FONT
+    }
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: onFechar,
+    style: ctrlBtn()
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 18,
+    color: C.muted
+  }))), q.length < 2 && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: C.muted,
+      lineHeight: 1.6
+    }
+  }, "Procura em notas, dores, sintomas, an\xE1lises, medica\xE7\xE3o, consultas, perguntas e registos de for\xE7a. Serve para aquelas alturas em que te lembras de ter escrito qualquer coisa e n\xE3o sabes onde."), q.length >= 2 && res.length === 0 && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: C.muted
+    }
+  }, "Nada encontrado."), Object.entries(grupos).map(([tipo, lista]) => /*#__PURE__*/React.createElement(Card, {
+    key: tipo,
+    style: {
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11.5,
+      fontWeight: 700,
+      color: C.muted,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+      marginBottom: 8
+    }
+  }, tipo, " \xB7 ", lista.length), lista.slice(0, 8).map((r, i) => /*#__PURE__*/React.createElement("button", {
+    key: i,
+    onClick: () => {
+      D.setTab(r.tab);
+      onFechar();
+    },
+    style: {
+      width: "100%",
+      textAlign: "left",
+      border: "none",
+      borderTop: i ? `1px solid ${C.line}` : "none",
+      background: "transparent",
+      cursor: "pointer",
+      padding: "10px 0",
+      display: "flex",
+      gap: 10,
+      alignItems: "flex-start"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      flex: 1,
+      minWidth: 0,
+      fontSize: 13.5,
+      color: C.ink,
+      lineHeight: 1.45
+    }
+  }, r.txt), r.data && /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11,
+      color: C.muted,
+      whiteSpace: "nowrap"
+    }
+  }, prettyDate(r.data))))))));
+}
+
+/* ------------------------- Aparência (Dados) --------------------- */
+const ESCALAS = [{
+  v: 0.92,
+  n: "Pequeno"
+}, {
+  v: 1,
+  n: "Normal"
+}, {
+  v: 1.12,
+  n: "Grande"
+}, {
+  v: 1.26,
+  n: "Muito grande"
+}];
+function Aparencia({
+  cfg,
+  saveCfg,
+  flash,
+  tema,
+  onToggleTheme
+}) {
+  const [, forcar] = useState(0);
+  const cor = corAtual(),
+    ct = contrasteAtual();
+  const escala = cfg.escalaTexto || 1;
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Sparkles, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "A app deve adaptar-se a quem a usa, e n\xE3o o contr\xE1rio."
+  }, "Apar\xEAncia"), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 13.5,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 8
+    }
+  }, "Cor"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginBottom: 18
+    }
+  }, Object.entries(ACENTOS).map(([k, v]) => /*#__PURE__*/React.createElement("button", {
+    key: k,
+    onClick: () => {
+      aplicarVisual(k, ct);
+      forcar(x => x + 1);
+      saveCfg({
+        ...cfg,
+        temaV: Date.now()
+      });
+      flash("Cor aplicada");
+    },
+    style: {
+      flex: 1,
+      height: 46,
+      borderRadius: 14,
+      cursor: "pointer",
+      border: cor === k ? `3px solid ${C.heading}` : `1px solid ${C.line}`,
+      background: `linear-gradient(135deg, ${v.L.primary}, ${v.L.teal})`
+    },
+    title: v.nome
+  }))), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 13.5,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 8
+    }
+  }, "Tamanho da letra"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginBottom: 18,
+      flexWrap: "wrap"
+    }
+  }, ESCALAS.map(e => /*#__PURE__*/React.createElement("button", {
+    key: e.n,
+    onClick: () => {
+      saveCfg({
+        ...cfg,
+        escalaTexto: e.v
+      });
+    },
+    style: {
+      ...chip(Math.abs(escala - e.v) < 0.01),
+      fontSize: 12 + (e.v - 1) * 8
+    }
+  }, e.n))), /*#__PURE__*/React.createElement(CheckRow, {
+    on: ct,
+    onToggle: () => {
+      aplicarVisual(cor, !ct);
+      forcar(x => x + 1);
+      saveCfg({
+        ...cfg,
+        temaV: Date.now()
+      });
+    },
+    title: "Alto contraste",
+    sub: "Texto mais escuro e contornos mais marcados"
+  }), /*#__PURE__*/React.createElement(CheckRow, {
+    on: tema === "dark",
+    onToggle: onToggleTheme,
+    title: "Tema escuro",
+    sub: "Tamb\xE9m est\xE1 no bot\xE3o do cabe\xE7alho"
+  }));
+}
+
+/* ------------------- Organizar os cartões do Diário --------------- */
+const CARTOES_DIARIO = [{
+  id: "clima",
+  n: "Tempo e UV"
+}, {
+  id: "hoje",
+  n: "Hoje (anéis e missões)"
+}, {
+  id: "prontidao",
+  n: "Prontidão"
+}, {
+  id: "semaforo",
+  n: "Semáforo de treino"
+}, {
+  id: "alertas",
+  n: "Alertas urgentes"
+}, {
+  id: "protoAgora",
+  n: "Protocolo do momento"
+}, {
+  id: "formulario",
+  n: "Registo da manhã e da noite"
+}, {
+  id: "noiteMa",
+  n: "Plano depois de noite curta"
+}, {
+  id: "recuperacao",
+  n: "Janela de recuperação"
+}, {
+  id: "previsao",
+  n: "Previsão de amanhã"
+}, {
+  id: "habitos",
+  n: "Hábitos"
+}, {
+  id: "orcamento",
+  n: "Onde vai o teu dia"
+}, {
+  id: "diamau",
+  n: "Está a ser um dia mau?"
+}, {
+  id: "cama",
+  n: "Modo cama"
+}, {
+  id: "sono",
+  n: "Banco do sono"
+}, {
+  id: "recentes",
+  n: "Últimos dias"
+}];
+function ordemDiario(cfg) {
+  const guardada = cfg && cfg.diarioOrdem || [];
+  const todos = CARTOES_DIARIO.map(c => c.id);
+  const ord = guardada.filter(x => todos.indexOf(x) >= 0);
+  todos.forEach(x => {
+    if (ord.indexOf(x) < 0) ord.push(x);
+  });
+  return ord;
+}
+function OrganizarDiario({
+  cfg,
+  saveCfg
+}) {
+  const [aberto, setAberto] = useState(false);
+  const ordem = ordemDiario(cfg);
+  const off = cfg.diarioOff || [];
+  const mover = (id, dir) => {
+    const i = ordem.indexOf(id),
+      j = i + dir;
+    if (j < 0 || j >= ordem.length) return;
+    const n = ordem.slice();
+    n[i] = n[j];
+    n[j] = id;
+    saveCfg({
+      ...cfg,
+      diarioOrdem: n
+    });
+    vibrar(8);
+  };
+  const alternar = id => saveCfg({
+    ...cfg,
+    diarioOff: off.indexOf(id) >= 0 ? off.filter(x => x !== id) : [...off, id]
+  });
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 16,
+      padding: 16
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAberto(!aberto),
+    style: {
+      border: "none",
+      background: "transparent",
+      color: C.teal,
+      fontSize: 13.5,
+      fontWeight: 700,
+      cursor: "pointer",
+      padding: 0,
+      display: "flex",
+      alignItems: "center",
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 15,
+    style: {
+      transform: aberto ? "rotate(90deg)" : "none",
+      transition: "transform .2s"
+    }
+  }), " Organizar o Di\xE1rio"), aberto && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11.5,
+      color: C.muted,
+      margin: "0 0 12px",
+      lineHeight: 1.5
+    }
+  }, "Escolhe o que aparece e por que ordem. O que desligares continua a existir, s\xF3 n\xE3o te aparece \xE0 frente."), ordem.map((id, i) => {
+    const c = CARTOES_DIARIO.find(x => x.id === id);
+    const ligado = off.indexOf(id) < 0;
+    return /*#__PURE__*/React.createElement("div", {
+      key: id,
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "8px 0",
+        borderTop: `1px solid ${C.line}`
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => alternar(id),
+      style: {
+        border: "none",
+        background: "transparent",
+        cursor: "pointer",
+        padding: 0
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 20,
+        height: 20,
+        borderRadius: 6,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: `1.5px solid ${ligado ? C.good : C.line}`,
+        background: ligado ? C.good : "transparent"
+      }
+    }, ligado && /*#__PURE__*/React.createElement(Check, {
+      size: 12,
+      color: "#fff",
+      strokeWidth: 3
+    }))), /*#__PURE__*/React.createElement("span", {
+      style: {
+        flex: 1,
+        minWidth: 0,
+        fontSize: 13,
+        color: ligado ? C.ink : C.muted
+      }
+    }, c ? c.n : id), /*#__PURE__*/React.createElement("button", {
+      onClick: () => mover(id, -1),
+      disabled: i === 0,
+      style: {
+        ...iconBtn(),
+        opacity: i === 0 ? 0.3 : 1
+      }
+    }, /*#__PURE__*/React.createElement(ChevronRight, {
+      size: 15,
+      style: {
+        transform: "rotate(-90deg)"
+      }
+    })), /*#__PURE__*/React.createElement("button", {
+      onClick: () => mover(id, 1),
+      disabled: i === ordem.length - 1,
+      style: {
+        ...iconBtn(),
+        opacity: i === ordem.length - 1 ? 0.3 : 1
+      }
+    }, /*#__PURE__*/React.createElement(ChevronRight, {
+      size: 15,
+      style: {
+        transform: "rotate(90deg)"
+      }
+    })));
+  })));
 }
 
 /* ---------------- Ecrãs de autenticação + Root ---------------- */
