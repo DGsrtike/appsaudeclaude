@@ -759,6 +759,41 @@ const Gauge = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.cr
   x2: "16",
   y2: "11"
 }));
+const Bell = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.createElement("path", {
+  d: "M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M13.7 21a2 2 0 0 1-3.4 0"
+}));
+const Cloud = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.createElement("path", {
+  d: "M17.5 19a4.5 4.5 0 0 0 .5-8.97A6 6 0 0 0 6.3 10.5 3.75 3.75 0 0 0 7 19z"
+}));
+const CloudOff = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.createElement("path", {
+  d: "M22 16.7a4.5 4.5 0 0 0-4-6.67 6 6 0 0 0-6.9-4.77"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M5.5 8.6A3.75 3.75 0 0 0 7 19h11"
+}), /*#__PURE__*/React.createElement("line", {
+  x1: "2",
+  y1: "2",
+  x2: "22",
+  y2: "22"
+}));
+const RefreshCw = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.createElement("path", {
+  d: "M21 12a9 9 0 0 1-15.5 6.2L3 16"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M3 12a9 9 0 0 1 15.5-6.2L21 8"
+}), /*#__PURE__*/React.createElement("polyline", {
+  points: "21 3 21 8 16 8"
+}), /*#__PURE__*/React.createElement("polyline", {
+  points: "3 21 3 16 8 16"
+}));
+const Shield = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.createElement("path", {
+  d: "M12 22s8-3.5 8-10V5.5L12 2 4 5.5V12c0 6.5 8 10 8 10z"
+}));
+const BookOpen = p => /*#__PURE__*/React.createElement(Ic, p, /*#__PURE__*/React.createElement("path", {
+  d: "M2 5h6a3 3 0 0 1 3 3v12a3 3 0 0 0-3-3H2z"
+}), /*#__PURE__*/React.createElement("path", {
+  d: "M22 5h-6a3 3 0 0 0-3 3v12a3 3 0 0 1 3-3h6z"
+}));
 
 /* ----------------------------- Temas ----------------------------- */
 const LIGHT = {
@@ -822,10 +857,124 @@ const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
 const SERIF = "ui-serif, Georgia, 'Times New Roman', serif";
 
 /* -------------------------- Armazenamento ------------------------ */
+/* ---------- Camada de dados offline-first + sincronização ---------- */
 let sb = null;
 let uid = null;
 let cache = {};
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const CORE_KEYS = ["log:days", "log:strength", "log:analyses", "log:proto", "log:config", "log:agenda"];
+
+/* ---- IndexedDB: espelho local de tudo (funciona sem rede) ---- */
+let _db = null;
+function abrirDB() {
+  return new Promise(res => {
+    try {
+      const r = indexedDB.open("recuperacao", 1);
+      r.onupgradeneeded = () => {
+        try {
+          r.result.createObjectStore("kv");
+        } catch (e) {}
+      };
+      r.onsuccess = () => {
+        _db = r.result;
+        res(_db);
+      };
+      r.onerror = () => res(null);
+    } catch (e) {
+      res(null);
+    }
+  });
+}
+async function db() {
+  return _db || (await abrirDB());
+}
+function tx(d, modo) {
+  return d.transaction("kv", modo).objectStore("kv");
+}
+async function idbGet(k) {
+  const d = await db();
+  if (!d) return null;
+  return new Promise(res => {
+    try {
+      const r = tx(d, "readonly").get(k);
+      r.onsuccess = () => res(r.result || null);
+      r.onerror = () => res(null);
+    } catch (e) {
+      res(null);
+    }
+  });
+}
+async function idbPut(k, rec) {
+  const d = await db();
+  if (!d) return;
+  return new Promise(res => {
+    try {
+      const r = tx(d, "readwrite").put(rec, k);
+      r.onsuccess = () => res();
+      r.onerror = () => res();
+    } catch (e) {
+      res();
+    }
+  });
+}
+async function idbTodos() {
+  const d = await db();
+  if (!d) return [];
+  return new Promise(res => {
+    const out = [];
+    try {
+      const r = tx(d, "readonly").openCursor();
+      r.onsuccess = e => {
+        const c = e.target.result;
+        if (c) {
+          out.push({
+            k: c.key,
+            rec: c.value
+          });
+          c.continue();
+        } else res(out);
+      };
+      r.onerror = () => res(out);
+    } catch (e) {
+      res(out);
+    }
+  });
+}
+const escopo = k => (uid ? uid : "anon") + "|" + k;
+
+/* ---- Estado de sincronização observável ---- */
+const _sync = {
+  online: typeof navigator !== "undefined" ? navigator.onLine !== false : true,
+  pendentes: 0,
+  aSincronizar: false,
+  ultima: null,
+  erro: null
+};
+let _ouvintes = [];
+function onSyncChange(fn) {
+  _ouvintes.push(fn);
+  return () => {
+    _ouvintes = _ouvintes.filter(f => f !== fn);
+  };
+}
+function syncStatus() {
+  return {
+    ..._sync
+  };
+}
+function emitir() {
+  const s = syncStatus();
+  _ouvintes.forEach(f => {
+    try {
+      f(s);
+    } catch (e) {}
+  });
+}
+async function contarPendentes() {
+  const todos = await idbTodos();
+  _sync.pendentes = todos.filter(x => x.rec && x.rec.sujo && String(x.k).indexOf((uid || "anon") + "|") === 0).length;
+  emitir();
+}
 function initClient(url, key) {
   try {
     if (!window.supabase) return false;
@@ -835,29 +984,132 @@ function initClient(url, key) {
     return false;
   }
 }
+
+/* ---- Sincronizar o que está por enviar ---- */
+let _aFlush = false,
+  _timer = null;
+async function flush(forcar) {
+  if (_aFlush) return;
+  if (!sb || !uid) return;
+  if (typeof navigator !== "undefined" && navigator.onLine === false && !forcar) return;
+  const todos = await idbTodos();
+  const sujos = todos.filter(x => x.rec && x.rec.sujo && String(x.k).indexOf(uid + "|") === 0);
+  if (!sujos.length) {
+    _sync.pendentes = 0;
+    emitir();
+    return;
+  }
+  _aFlush = true;
+  _sync.aSincronizar = true;
+  _sync.erro = null;
+  emitir();
+  let falhou = false;
+  for (const item of sujos) {
+    const chave = String(item.k).slice(uid.length + 1);
+    try {
+      if (item.rec.apagado) await sb.from("dados").delete().eq("chave", chave);else await sb.from("dados").upsert({
+        user_id: uid,
+        chave,
+        valor: item.rec.v,
+        atualizado: new Date().toISOString()
+      }, {
+        onConflict: "user_id,chave"
+      });
+      await idbPut(item.k, {
+        ...item.rec,
+        sujo: false
+      });
+    } catch (e) {
+      falhou = true;
+      break;
+    }
+  }
+  _aFlush = false;
+  _sync.aSincronizar = false;
+  if (!falhou) {
+    _sync.ultima = new Date().toISOString();
+    try {
+      localStorage.setItem("sync:ultima", _sync.ultima);
+    } catch (e) {}
+  } else _sync.erro = "Sem ligação ao servidor";
+  await contarPendentes();
+}
+function agendarFlush() {
+  clearTimeout(_timer);
+  _timer = setTimeout(() => flush(), 900);
+}
+function forcarSync() {
+  return flush(true);
+}
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => {
+    _sync.online = true;
+    emitir();
+    flush();
+  });
+  window.addEventListener("offline", () => {
+    _sync.online = false;
+    emitir();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) flush();
+  });
+  setInterval(() => {
+    if (navigator.onLine !== false) flush();
+  }, 60000);
+  try {
+    _sync.ultima = localStorage.getItem("sync:ultima");
+  } catch (e) {}
+}
+
+/* ---- Carregar dados: primeiro o local, depois a nuvem ---- */
 async function loadCore() {
   cache = {};
-  if (!sb) return;
+  const todos = await idbTodos();
+  const meus = todos.filter(x => String(x.k).indexOf((uid || "anon") + "|") === 0);
+  meus.forEach(x => {
+    if (x.rec && !x.rec.apagado) cache[String(x.k).slice((uid || "anon").length + 1)] = x.rec.v;
+  });
+  await contarPendentes();
+  if (!sb || typeof navigator !== "undefined" && navigator.onLine === false) return;
   try {
     const {
       data,
       error
-    } = await sb.from("dados").select("chave,valor").in("chave", ["log:days", "log:strength", "log:analyses"]);
-    if (!error && data) data.forEach(r => {
-      cache[r.chave] = r.valor;
-    });
-  } catch (e) {/* offline: segue com cache vazia */}
+    } = await sb.from("dados").select("chave,valor").in("chave", CORE_KEYS);
+    if (!error && data) {
+      for (const r of data) {
+        const local = await idbGet(escopo(r.chave));
+        if (local && local.sujo) continue; /* alterações locais por enviar ganham */
+        cache[r.chave] = r.valor;
+        await idbPut(escopo(r.chave), {
+          v: r.valor,
+          sujo: false
+        });
+      }
+    }
+  } catch (e) {/* offline: segue com o espelho local */}
+  flush();
 }
 const store = {
   async get(key) {
     if (key in cache) return cache[key];
-    if (!sb) return null;
+    const local = await idbGet(escopo(key));
+    if (local && !local.apagado) {
+      cache[key] = local.v;
+      return local.v;
+    }
+    if (!sb || typeof navigator !== "undefined" && navigator.onLine === false) return null;
     try {
       const {
         data
       } = await sb.from("dados").select("valor").eq("chave", key).maybeSingle();
       const v = data ? data.valor : null;
       cache[key] = v;
+      if (v != null) await idbPut(escopo(key), {
+        v,
+        sujo: false
+      });
       return v;
     } catch (e) {
       return null;
@@ -865,37 +1117,50 @@ const store = {
   },
   async set(key, value) {
     cache[key] = value;
-    if (!sb || !uid) return;
-    try {
-      await sb.from("dados").upsert({
-        user_id: uid,
-        chave: key,
-        valor: value,
-        atualizado: new Date().toISOString()
-      }, {
-        onConflict: "user_id,chave"
-      });
-    } catch (e) {
-      console.error("sync", e);
-    }
+    await idbPut(escopo(key), {
+      v: value,
+      sujo: true
+    });
+    await contarPendentes();
+    agendarFlush();
   },
   async del(key) {
     delete cache[key];
-    if (!sb) return;
-    try {
-      await sb.from("dados").delete().eq("chave", key);
-    } catch (e) {}
+    await idbPut(escopo(key), {
+      v: null,
+      sujo: true,
+      apagado: true
+    });
+    await contarPendentes();
+    agendarFlush();
   },
   async list(prefix) {
-    if (!sb) return Object.keys(cache).filter(k => k.startsWith(prefix));
-    try {
-      const {
-        data
-      } = await sb.from("dados").select("chave").like("chave", prefix + "%");
-      return data ? data.map(r => r.chave) : [];
-    } catch (e) {
-      return Object.keys(cache).filter(k => k.startsWith(prefix));
+    const set = {};
+    Object.keys(cache).forEach(k => {
+      if (k.indexOf(prefix) === 0) set[k] = 1;
+    });
+    const todos = await idbTodos();
+    todos.forEach(x => {
+      const k = String(x.k);
+      if (k.indexOf((uid || "anon") + "|") !== 0) return;
+      const chave = k.slice((uid || "anon").length + 1);
+      if (chave.indexOf(prefix) === 0) {
+        if (x.rec && x.rec.apagado) delete set[chave];else set[chave] = 1;
+      }
+    });
+    if (sb && (typeof navigator === "undefined" || navigator.onLine !== false)) {
+      try {
+        const {
+          data
+        } = await sb.from("dados").select("chave").like("chave", prefix + "%");
+        if (data) for (const r of data) {
+          const local = await idbGet(escopo(r.chave));
+          if (local && local.apagado) continue;
+          set[r.chave] = 1;
+        }
+      } catch (e) {}
     }
+    return Object.keys(set);
   }
 };
 
@@ -1086,32 +1351,6 @@ const PROTO_DEFAULT = [{
   nome: "Hyseac 50 + creme labial",
   nota: ""
 }];
-const PROVA_DEFAULT = [{
-  id: "c1",
-  min: 2880,
-  txt: "Carboload — começa 2 noites antes"
-}, {
-  id: "c2",
-  min: 120,
-  txt: "Nitric (3) + Beet Shoot / Atacx"
-}, {
-  id: "c3",
-  min: 90,
-  txt: "Bicarbonato 19 g"
-}, {
-  id: "c4",
-  min: 45,
-  txt: "Disocor + Creatina"
-}, {
-  id: "c5",
-  min: 45,
-  txt: "Cafeína + Taurina"
-}, {
-  id: "c6",
-  min: 20,
-  txt: "Chiclete de cafeína"
-}];
-
 /* --------------------- Catálogo de marcadores -------------------- */
 const MARCADORES = [{
   n: "Hemoglobina",
@@ -1527,25 +1766,6 @@ function metricasSono(days, alvo) {
     regularidade,
     n: val.length
   };
-}
-
-/* -------------------------- Natação ------------------------------ */
-const PROVAS = ["50 Livres", "100 Livres", "200 Livres", "400 Livres", "800 Livres", "1500 Livres", "50 Costas", "100 Costas", "200 Costas", "50 Bruços", "100 Bruços", "200 Bruços", "50 Mariposa", "100 Mariposa", "200 Mariposa", "200 Estilos", "400 Estilos"];
-function parseTempo(s) {
-  if (!s) return null;
-  const t = String(s).trim().replace(",", ".");
-  let m = t.match(/^(\d+):(\d{1,2})(?:\.(\d{1,2}))?$/);
-  if (m) return +m[1] * 6000 + +m[2] * 100 + (m[3] ? +String(m[3]).padEnd(2, "0") : 0);
-  m = t.match(/^(\d{1,2})(?:\.(\d{1,2}))?$/);
-  if (m) return +m[1] * 100 + (m[2] ? +String(m[2]).padEnd(2, "0") : 0);
-  return null;
-}
-function fmtTempo(cs) {
-  if (cs == null) return "—";
-  const min = Math.floor(cs / 6000),
-    seg = Math.floor(cs % 6000 / 100),
-    c = cs % 100;
-  return (min ? `${min}:${String(seg).padStart(2, "0")}` : `${seg}`) + `.${String(c).padStart(2, "0")}`;
 }
 
 /* ------------------------- Hidratação ---------------------------- */
@@ -1975,16 +2195,12 @@ function streakRegisto(days) {
 }
 
 /* ------------------------- Conquistas ---------------------------- */
-function conquistas(days, strength, swim, proto, cfg) {
+function conquistas(days, strength, proto, cfg) {
   const L = [];
   const sr = streakRegisto(days),
     sp = streakProtocolo(proto);
   const sono = metricasSono(days, cfg.sonoAlvo);
   const nDias = Object.keys(days).length;
-  const pbs = {};
-  (swim || []).forEach(s => {
-    if (s.cs != null && (pbs[s.prova] == null || s.cs < pbs[s.prova])) pbs[s.prova] = s.cs;
-  });
   L.push({
     t: "Primeiro registo",
     ok: nDias >= 1,
@@ -2021,14 +2237,14 @@ function conquistas(days, strength, swim, proto, cfg) {
     d: "Dryland a sério."
   });
   L.push({
-    t: "Primeiro tempo de prova",
-    ok: (swim || []).length >= 1,
-    d: "Cronómetro ligado."
+    t: "Semana sem alertas vermelhos",
+    ok: motorAlertas(days, cfg, proto, []).filter(a => a.sev === "alta").length === 0 && Object.keys(days).length >= 7,
+    d: "Nenhum sinal grave por resolver."
   });
   L.push({
-    t: "3 provas com recorde pessoal",
-    ok: Object.keys(pbs).length >= 3,
-    d: "Três distâncias com marca tua."
+    t: "Hidratação medida",
+    ok: Object.keys(days).some(k => days[k].hydration),
+    d: "Peso antes e depois do treino."
   });
   L.push({
     t: "Análises em dia",
@@ -2039,7 +2255,7 @@ function conquistas(days, strength, swim, proto, cfg) {
 }
 
 /* --------------------- Briefing semanal -------------------------- */
-function briefingSemanal(days, cfg, proto, swim) {
+function briefingSemanal(days, cfg, proto) {
   const carga = metricasCarga(days),
     sono = metricasSono(days, cfg.sonoAlvo);
   const baseHR = avg(Object.keys(days).map(k => days[k].morning ? days[k].morning.fcRepouso : null));
@@ -2053,8 +2269,6 @@ function briefingSemanal(days, cfg, proto, swim) {
   if (carga.semana != null) L.push(`Carga semanal de ${carga.semana} unidades (RPE × minutos)${carga.deltaSemana != null ? `, ${carga.deltaSemana > 0 ? "mais" : "menos"} ${Math.abs(carga.deltaSemana)}% do que na semana anterior` : ""}${carga.acwr != null ? ` · ACWR ${carga.acwr} (${bandaAcwr(carga.acwr).t.toLowerCase()})` : ""}.`);
   const ad = adesaoProtocolo(proto, 7);
   if (ad != null) L.push(`Adesão ao protocolo de suplementação: ${ad}%.`);
-  const recentes = (swim || []).filter(s => s.date >= daysAgoKey(7));
-  if (recentes.length) L.push(`${recentes.length} tempo(s) cronometrado(s) esta semana.`);
   /* Ação da semana */
   let acao = "Mantém o que estás a fazer — está equilibrado.";
   if (sono.debt7 >= 5) acao = "A prioridade desta semana é o sono: recupera 30–45 min por noite antes de mexer em mais alguma coisa.";else if (carga.acwr != null && carga.acwr > 1.4) acao = "A prioridade desta semana é segurar a carga — não somes mais uma semana de subida.";else if (ad != null && ad < 60) acao = "A prioridade desta semana é a consistência do protocolo: fixa-o a um hábito que já tens (o pequeno-almoço e o jantar).";else if (rd.length && avg(rd) < 55) acao = "A prioridade desta semana é recuperação: um dia claramente leve faz mais por ti do que outro dia forte.";
@@ -2890,11 +3104,9 @@ function Tracker({
   const [days, setDays] = useState({});
   const [strength, setStrength] = useState([]);
   const [analyses, setAnalyses] = useState([]);
-  const [swim, setSwim] = useState([]);
   const [proto, setProto] = useState({
     itens: PROTO_DEFAULT,
-    done: {},
-    prova: PROVA_DEFAULT
+    done: {}
   });
   const [cfg, setCfg] = useState(DEFAULT_CONFIG);
   const [agenda, setAgenda] = useState({
@@ -2916,23 +3128,19 @@ function Tracker({
       const d = await store.get("log:days"),
         s = await store.get("log:strength"),
         a = await store.get("log:analyses");
-      const w = await store.get("log:swim"),
-        p = await store.get("log:proto"),
+      const p = await store.get("log:proto"),
         c = await store.get("log:config"),
         g = await store.get("log:agenda");
       setDays(parse(d, {}));
       setStrength(parse(s, []));
       setAnalyses(parse(a, []));
-      setSwim(parse(w, []));
       const pp = parse(p, null);
       setProto(pp && pp.itens ? {
         itens: pp.itens,
-        done: pp.done || {},
-        prova: pp.prova || PROVA_DEFAULT
+        done: pp.done || {}
       } : {
         itens: PROTO_DEFAULT,
-        done: {},
-        prova: PROVA_DEFAULT
+        done: {}
       });
       setCfg({
         ...DEFAULT_CONFIG,
@@ -2957,10 +3165,6 @@ function Tracker({
   const saveAnalyses = async n => {
     setAnalyses(n);
     await store.set("log:analyses", JSON.stringify(n));
-  };
-  const saveSwim = async n => {
-    setSwim(n);
-    await store.set("log:swim", JSON.stringify(n));
   };
   const saveProto = async n => {
     setProto(n);
@@ -3009,6 +3213,27 @@ function Tracker({
     delImage
   };
   const alertas = useMemo(() => loaded ? motorAlertas(days, cfg, proto, analyses) : [], [days, cfg, proto, analyses, loaded]);
+  useEffect(() => {
+    registarSW();
+  }, []);
+  useEffect(() => {
+    if (!loaded) return;
+    const ver = () => {
+      try {
+        verificarLembretes(proto, cfg, alertas);
+      } catch (e) {}
+    };
+    ver();
+    const t = setInterval(ver, 60000);
+    const vis = () => {
+      if (!document.hidden) ver();
+    };
+    document.addEventListener("visibilitychange", vis);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", vis);
+    };
+  }, [loaded, proto, cfg, alertas]);
   const nAltos = alertas.filter(a => a.sev === "alta").length;
   const tabs = [{
     id: "diario",
@@ -3043,8 +3268,6 @@ function Tracker({
     saveStrength,
     analyses,
     saveAnalyses,
-    swim,
-    saveSwim,
     proto,
     saveProto,
     cfg,
@@ -3115,7 +3338,11 @@ function Tracker({
       fontSize: 12,
       color: C.muted
     }
-  }, weekdayShort(dayKey()), " \xB7 ", prettyDate(dayKey()))), /*#__PURE__*/React.createElement("button", {
+  }, weekdayShort(dayKey()), " \xB7 ", prettyDate(dayKey())), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 6
+    }
+  }, /*#__PURE__*/React.createElement(SyncPill, null))), /*#__PURE__*/React.createElement("button", {
     onClick: onToggleTheme,
     "aria-label": "Tema",
     style: ctrlBtn()
@@ -3294,6 +3521,34 @@ function Diario({
     ...p,
     [k]: v
   }));
+  const ontem = days[daysAgoKey(1)] || {};
+  const copiarOntem = () => {
+    if (mode === "manha") {
+      const o = ontem.morning || {};
+      setF(p => ({
+        ...p,
+        deitar: p.deitar || o.deitar,
+        acordar: p.acordar || o.acordar,
+        qualidadeSono: p.qualidadeSono ?? o.qualidadeSono,
+        energia: p.energia ?? o.energia,
+        humor: p.humor ?? o.humor,
+        dores: p.dores ?? o.dores,
+        apetite: p.apetite ?? o.apetite
+      }));
+    } else {
+      const o = ontem.evening || {};
+      setF(p => ({
+        ...p,
+        treino: p.treino || o.treino,
+        duracao: p.duracao ?? o.duracao,
+        rpe: p.rpe ?? o.rpe,
+        metros: p.metros ?? o.metros,
+        estudo: p.estudo ?? o.estudo
+      }));
+    }
+    flash("Preenchido a partir de ontem");
+  };
+  const temOntem = mode === "manha" ? !!ontem.morning : !!ontem.evening;
   const toggleList = (k, v) => setF(p => {
     const cur = p[k] || [];
     return {
@@ -3628,7 +3883,15 @@ function Diario({
       color: C.teal
     }),
     hint: "Como acordaste hoje. Anexa o(s) print(s) dos batimentos do sensor durante a noite."
-  }, "Ao acordar"), /*#__PURE__*/React.createElement("label", {
+  }, "Ao acordar"), temOntem && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement(GhostBtn, {
+    onClick: copiarOntem
+  }, /*#__PURE__*/React.createElement(Copy, {
+    size: 15
+  }), " Preencher a partir de ontem")), /*#__PURE__*/React.createElement("label", {
     style: {
       fontSize: 14,
       color: C.ink,
@@ -3755,7 +4018,15 @@ function Diario({
       color: C.teal
     }),
     hint: "Fecho do dia \u2014 como correu o treino e como est\xE1s agora."
-  }, "Fim do dia"), /*#__PURE__*/React.createElement("div", {
+  }, "Fim do dia"), temOntem && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement(GhostBtn, {
+    onClick: copiarOntem
+  }, /*#__PURE__*/React.createElement(Copy, {
+    size: 15
+  }), " Preencher a partir de ontem")), /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 16
     }
@@ -3818,6 +4089,14 @@ function Diario({
     onChange: v => set("energiaTarde", v),
     lowLabel: "esgotado",
     highLabel: "cheio"
+  }), /*#__PURE__*/React.createElement(NumField, {
+    label: "Escola, estudo e explica\xE7\xF5es",
+    value: f.estudo,
+    onChange: v => set("estudo", v),
+    unit: "min",
+    step: "15",
+    placeholder: "120",
+    hint: "Tamb\xE9m \xE9 carga. A app cruza estas horas com a tua prontid\xE3o do dia seguinte."
   }), /*#__PURE__*/React.createElement("label", {
     style: {
       fontSize: 14,
@@ -3858,7 +4137,10 @@ function Diario({
     onClick: save
   }, /*#__PURE__*/React.createElement(Check, {
     size: 17
-  }), " Guardar ", mode === "manha" ? "manhã" : "tarde"))), sono.n >= 2 && /*#__PURE__*/React.createElement(Card, {
+  }), " Guardar ", mode === "manha" ? "manhã" : "tarde"))), /*#__PURE__*/React.createElement(CardPrevisao, {
+    days: days,
+    cfg: cfg
+  }), sono.n >= 2 && /*#__PURE__*/React.createElement(Card, {
     style: {
       marginTop: 18
     }
@@ -4039,16 +4321,10 @@ function Treino(props) {
       id: "forca",
       label: "Força"
     }, {
-      id: "piscina",
-      label: "Piscina"
-    }, {
       id: "carga",
       label: "Carga"
-    }, {
-      id: "prova",
-      label: "Dia de prova"
     }]
-  }), sub === "forca" && /*#__PURE__*/React.createElement(Forca, props), sub === "piscina" && /*#__PURE__*/React.createElement(Piscina, props), sub === "carga" && /*#__PURE__*/React.createElement(Carga, props), sub === "prova" && /*#__PURE__*/React.createElement(Prova, props));
+  }), sub === "forca" && /*#__PURE__*/React.createElement(Forca, props), sub === "carga" && /*#__PURE__*/React.createElement(Carga, props));
 }
 function Forca({
   strength,
@@ -4348,230 +4624,6 @@ function Forca({
     })))));
   }));
 }
-function Piscina({
-  swim,
-  saveSwim,
-  flash
-}) {
-  const [prova, setProva] = useState("100 Livres");
-  const [tempo, setTempo] = useState("");
-  const [piscina, setPiscina] = useState("25 m");
-  const [contexto, setContexto] = useState("Competição");
-  const [date, setDate] = useState(dayKey());
-  const [notas, setNotas] = useState("");
-  const cs = parseTempo(tempo);
-  const add = () => {
-    if (cs == null) {
-      flash("Escreve o tempo como 1:02.45");
-      return;
-    }
-    const antes = swim.filter(s => s.prova === prova && s.piscina === piscina);
-    const pbAntes = antes.length ? Math.min(...antes.map(s => s.cs)) : null;
-    saveSwim([{
-      id: uid8(),
-      date,
-      prova,
-      piscina,
-      contexto,
-      cs,
-      notas: notas.trim()
-    }, ...swim]);
-    setTempo("");
-    setNotas("");
-    flash(pbAntes != null && cs < pbAntes ? `Recorde pessoal! −${fmtTempo(pbAntes - cs)}` : "Tempo guardado");
-  };
-  const del = id => {
-    if (!window.confirm("Apagar este tempo?")) return;
-    saveSwim(swim.filter(s => s.id !== id));
-  };
-  const grupos = useMemo(() => {
-    const g = {};
-    swim.forEach(s => {
-      const k = `${s.prova} · ${s.piscina}`;
-      (g[k] = g[k] || []).push(s);
-    });
-    return g;
-  }, [swim]);
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
-    icon: /*#__PURE__*/React.createElement(Waves, {
-      size: 18,
-      color: C.teal
-    }),
-    hint: "O \xFAnico n\xFAmero que o treinador realmente compara. Guarda aqui os tempos para veres a progress\xE3o e cruz\xE1-la com o sono, a carga e a recupera\xE7\xE3o."
-  }, "Novo tempo"), /*#__PURE__*/React.createElement("label", {
-    style: {
-      fontSize: 14,
-      color: C.ink,
-      fontWeight: 600,
-      display: "block",
-      marginBottom: 6
-    }
-  }, "Prova"), /*#__PURE__*/React.createElement("select", {
-    value: prova,
-    onChange: e => setProva(e.target.value),
-    style: {
-      width: "100%",
-      boxSizing: "border-box",
-      border: `1px solid ${C.line}`,
-      borderRadius: 12,
-      padding: "12px 14px",
-      fontSize: 16,
-      background: C.input,
-      color: C.ink,
-      fontFamily: FONT,
-      marginBottom: 14
-    }
-  }, PROVAS.map(p => /*#__PURE__*/React.createElement("option", {
-    key: p,
-    value: p
-  }, p))), /*#__PURE__*/React.createElement("label", {
-    style: {
-      fontSize: 14,
-      color: C.ink,
-      fontWeight: 600,
-      display: "block",
-      marginBottom: 6
-    }
-  }, "Tempo"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 6
-    }
-  }, /*#__PURE__*/React.createElement(TextInput, {
-    value: tempo,
-    onChange: setTempo,
-    placeholder: "1:02.45  ou  27.80"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 12.5,
-      color: cs != null ? C.teal : C.muted,
-      marginBottom: 14,
-      textAlign: "right",
-      fontWeight: 600
-    }
-  }, cs != null ? fmtTempo(cs) : "minutos:segundos.centésimos"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      flexWrap: "wrap",
-      marginBottom: 14
-    }
-  }, ["25 m", "50 m"].map(o => /*#__PURE__*/React.createElement("button", {
-    key: o,
-    onClick: () => setPiscina(o),
-    style: chip(piscina === o)
-  }, o))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      flexWrap: "wrap",
-      marginBottom: 14
-    }
-  }, ["Competição", "Treino", "Controlo"].map(o => /*#__PURE__*/React.createElement("button", {
-    key: o,
-    onClick: () => setContexto(o),
-    style: chip(contexto === o)
-  }, o))), /*#__PURE__*/React.createElement(DateField, {
-    label: "Data",
-    value: date,
-    onChange: setDate
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginBottom: 16
-    }
-  }, /*#__PURE__*/React.createElement(Area, {
-    value: notas,
-    onChange: setNotas,
-    placeholder: "Sensa\xE7\xF5es, viragens, sa\xEDda\u2026"
-  })), /*#__PURE__*/React.createElement(PrimaryBtn, {
-    onClick: add,
-    disabled: cs == null
-  }, /*#__PURE__*/React.createElement(Plus, {
-    size: 17
-  }), " Guardar tempo")), Object.keys(grupos).length === 0 ? /*#__PURE__*/React.createElement(Empty, null, "Ainda sem tempos. Assim que registares dois, aparece a progress\xE3o e o teu recorde pessoal.") : Object.entries(grupos).map(([k, list]) => {
-    const pb = Math.min(...list.map(s => s.cs));
-    const sorted = [...list].sort((a, b) => a.date < b.date ? 1 : -1);
-    const serie = sorted.slice(0, 12).reverse().map(s => -s.cs);
-    return /*#__PURE__*/React.createElement(Card, {
-      key: k,
-      style: {
-        marginTop: 16,
-        padding: 16
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 8
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 15,
-        color: C.heading,
-        fontWeight: 700
-      }
-    }, k), /*#__PURE__*/React.createElement(Badge, {
-      color: C.amber,
-      soft: C.amberSoft
-    }, "RP ", fmtTempo(pb))), serie.length > 1 && /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        justifyContent: "flex-end",
-        marginBottom: 4
-      }
-    }, /*#__PURE__*/React.createElement(Sparkline, {
-      values: serie,
-      color: C.good,
-      w: 140,
-      h: 28
-    })), sorted.slice(0, 8).map(s => {
-      const dif = s.cs - pb;
-      return /*#__PURE__*/React.createElement("div", {
-        key: s.id,
-        style: {
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "9px 0",
-          borderTop: `1px solid ${C.line}`
-        }
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          fontSize: 12.5,
-          color: C.muted,
-          width: 88,
-          flexShrink: 0
-        }
-      }, prettyDate(s.date)), /*#__PURE__*/React.createElement("span", {
-        style: {
-          fontSize: 10.5,
-          color: C.muted
-        }
-      }, s.contexto[0]), /*#__PURE__*/React.createElement("span", {
-        style: {
-          flex: 1,
-          textAlign: "right",
-          fontSize: 15.5,
-          color: C.ink,
-          fontWeight: 700,
-          fontVariantNumeric: "tabular-nums"
-        }
-      }, fmtTempo(s.cs)), /*#__PURE__*/React.createElement("span", {
-        style: {
-          fontSize: 11,
-          color: dif === 0 ? C.amber : C.muted,
-          width: 46,
-          textAlign: "right"
-        }
-      }, dif === 0 ? "RP" : `+${fmtTempo(dif)}`), /*#__PURE__*/React.createElement("button", {
-        onClick: () => del(s.id),
-        style: iconBtn()
-      }, /*#__PURE__*/React.createElement(Trash2, {
-        size: 15
-      })));
-    }));
-  }));
-}
 function Carga({
   days,
   cfg
@@ -4691,289 +4743,6 @@ function Carga({
       color: C.ink
     }
   }, "Monotonia"), " mede se todos os dias s\xE3o iguais. Acima de 2 significa semana sem picos nem dias leves \u2014 cansa mais para o mesmo treino.", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("br", null), "\xC9 uma leitura de tend\xEAncia, n\xE3o um diagn\xF3stico. Precisa de duas a quatro semanas de registos para ficar fi\xE1vel.")));
-}
-
-/* ---------------------- DIA DE PROVA (timer) --------------------- */
-function Prova({
-  cfg,
-  saveCfg,
-  proto,
-  saveProto,
-  flash
-}) {
-  const [agora, setAgora] = useState(new Date());
-  useEffect(() => {
-    const t = setInterval(() => setAgora(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-  const passos = (proto.prova || PROVA_DEFAULT).slice().sort((a, b) => b.min - a.min);
-  const hora = cfg.provaData ? new Date(cfg.provaData) : null;
-  const valida = hora && !isNaN(hora.getTime());
-  const restanteMs = valida ? hora.getTime() - agora.getTime() : null;
-  const feitos = (proto.provaDone && cfg.provaData ? proto.provaDone[cfg.provaData] : null) || [];
-  const toggle = id => {
-    const key = cfg.provaData;
-    if (!key) return;
-    const cur = ((proto.provaDone || {})[key] || []).slice();
-    const i = cur.indexOf(id);
-    if (i >= 0) cur.splice(i, 1);else cur.push(id);
-    saveProto({
-      ...proto,
-      provaDone: {
-        ...(proto.provaDone || {}),
-        [key]: cur
-      }
-    });
-  };
-  const fmtRestante = ms => {
-    const neg = ms < 0;
-    const s = Math.floor(Math.abs(ms) / 1000);
-    const d = Math.floor(s / 86400),
-      h = Math.floor(s % 86400 / 3600),
-      m = Math.floor(s % 3600 / 60),
-      ss = s % 60;
-    if (d > 0) return `${neg ? "−" : ""}${d} d ${h} h`;
-    return `${neg ? "−" : ""}${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
-  };
-  const horaDoPasso = min => valida ? new Date(hora.getTime() - min * 60000) : null;
-  const hhmm = d => d ? `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}` : "—";
-  const diaDe = d => d && hora && d.toDateString() !== hora.toDateString() ? ` (${weekdayShort(dayKey(d))})` : "";
-  const ativoIdx = (() => {
-    if (!valida || restanteMs == null || restanteMs < 0) return -1;
-    const minsRest = restanteMs / 60000;
-    let idx = -1;
-    passos.forEach((p, i) => {
-      if (minsRest <= p.min) {
-        if (idx === -1) idx = i;
-      }
-    });
-    for (let i = passos.length - 1; i >= 0; i--) {
-      if (minsRest <= passos[i].min) return i;
-    }
-    return idx;
-  })();
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
-    icon: /*#__PURE__*/React.createElement(Trophy, {
-      size: 18,
-      color: C.teal
-    }),
-    hint: "P\xF5e aqui a hora exata da tua s\xE9rie e a app transforma o protocolo de competi\xE7\xE3o do Prof. Milheiro numa contagem decrescente com horas concretas."
-  }, "Dia de prova"), /*#__PURE__*/React.createElement("label", {
-    style: {
-      fontSize: 13.5,
-      color: C.ink,
-      fontWeight: 600,
-      display: "block",
-      marginBottom: 6
-    }
-  }, "Data e hora da prova"), /*#__PURE__*/React.createElement("input", {
-    type: "datetime-local",
-    value: cfg.provaData || "",
-    onChange: e => saveCfg({
-      ...cfg,
-      provaData: e.target.value
-    }),
-    style: {
-      width: "100%",
-      boxSizing: "border-box",
-      border: `1px solid ${C.line}`,
-      borderRadius: 12,
-      padding: "12px 14px",
-      fontSize: 16,
-      background: C.input,
-      color: C.ink,
-      fontFamily: FONT,
-      marginBottom: 16
-    }
-  }), valida && /*#__PURE__*/React.createElement("div", {
-    style: {
-      textAlign: "center",
-      padding: "14px 0 4px"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11.5,
-      color: C.muted,
-      fontWeight: 700,
-      textTransform: "uppercase",
-      letterSpacing: 1,
-      marginBottom: 6
-    }
-  }, restanteMs >= 0 ? "Faltam" : "Já passou"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 40,
-      fontWeight: 700,
-      color: restanteMs >= 0 ? C.primary : C.muted,
-      fontVariantNumeric: "tabular-nums",
-      letterSpacing: -1
-    }
-  }, fmtRestante(restanteMs)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 12.5,
-      color: C.muted,
-      marginTop: 6
-    }
-  }, hora.toLocaleString("pt-PT", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit"
-  })))), valida ? /*#__PURE__*/React.createElement(Card, {
-    style: {
-      marginTop: 16
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      marginBottom: 12
-    }
-  }, /*#__PURE__*/React.createElement(Timer, {
-    size: 17,
-    color: C.teal
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 14.5,
-      fontWeight: 700,
-      color: C.heading,
-      flex: 1
-    }
-  }, "Protocolo de competi\xE7\xE3o"), /*#__PURE__*/React.createElement(Badge, null, feitos.length, "/", passos.length)), passos.map((p, i) => {
-    const h = horaDoPasso(p.min);
-    const on = feitos.indexOf(p.id) >= 0;
-    const ativo = i === ativoIdx && !on;
-    const passou = valida && h && h.getTime() < agora.getTime();
-    return /*#__PURE__*/React.createElement("div", {
-      key: p.id,
-      style: {
-        background: ativo ? C.tealSoft : "transparent",
-        borderRadius: 12,
-        marginBottom: 2,
-        padding: ativo ? "2px 8px" : 0,
-        border: ativo ? `1px solid ${C.teal}55` : "none"
-      }
-    }, /*#__PURE__*/React.createElement(CheckRow, {
-      on: on,
-      onToggle: () => toggle(p.id),
-      title: p.txt,
-      sub: `${p.min >= 1440 ? `${Math.round(p.min / 1440)} dia(s)` : `T−${p.min} min`} · às ${hhmm(h)}${diaDe(h)}${passou && !on ? " · já passou" : ""}`,
-      right: ativo ? /*#__PURE__*/React.createElement(Badge, {
-        color: C.teal
-      }, "agora") : passou && !on ? /*#__PURE__*/React.createElement(Badge, {
-        color: C.warn,
-        soft: C.amberSoft
-      }, "em falta") : null
-    }));
-  }), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 11,
-      color: C.muted,
-      marginTop: 14,
-      lineHeight: 1.55
-    }
-  }, "Protocolo tal como est\xE1 escrito pelo Prof. Jaime Milheiro. Se ele o alterar, edita os passos abaixo. Nada aqui deve ser experimentado pela primeira vez num dia de prova.")) : /*#__PURE__*/React.createElement(Empty, null, "Escolhe a data e a hora da prova para veres a contagem decrescente e as horas exatas de cada toma."), /*#__PURE__*/React.createElement(EditorPassos, {
-    proto: proto,
-    saveProto: saveProto,
-    flash: flash
-  }));
-}
-function EditorPassos({
-  proto,
-  saveProto,
-  flash
-}) {
-  const [aberto, setAberto] = useState(false);
-  const [txt, setTxt] = useState("");
-  const [min, setMin] = useState(null);
-  const passos = proto.prova || PROVA_DEFAULT;
-  const add = () => {
-    if (!txt.trim() || min == null) return;
-    saveProto({
-      ...proto,
-      prova: [...passos, {
-        id: uid8(),
-        min,
-        txt: txt.trim()
-      }]
-    });
-    setTxt("");
-    setMin(null);
-    flash("Passo adicionado");
-  };
-  const del = id => saveProto({
-    ...proto,
-    prova: passos.filter(p => p.id !== id)
-  });
-  return /*#__PURE__*/React.createElement(Card, {
-    style: {
-      marginTop: 16,
-      padding: 16
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setAberto(!aberto),
-    style: {
-      border: "none",
-      background: "transparent",
-      color: C.teal,
-      fontSize: 13.5,
-      fontWeight: 700,
-      cursor: "pointer",
-      padding: 0,
-      display: "flex",
-      alignItems: "center",
-      gap: 6
-    }
-  }, /*#__PURE__*/React.createElement(ChevronRight, {
-    size: 15,
-    style: {
-      transform: aberto ? "rotate(90deg)" : "none",
-      transition: "transform .2s"
-    }
-  }), " Editar passos do protocolo"), aberto && /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 14
-    }
-  }, passos.slice().sort((a, b) => b.min - a.min).map(p => /*#__PURE__*/React.createElement(Row, {
-    key: p.id,
-    left: /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 13.5,
-        color: C.ink
-      }
-    }, p.txt),
-    right: /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 12,
-        color: C.muted
-      }
-    }, "T\u2212", p.min, "\u2032"),
-    onDel: () => del(p.id)
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 14
-    }
-  }, /*#__PURE__*/React.createElement(TextInput, {
-    value: txt,
-    onChange: setTxt,
-    placeholder: "O que tomar / fazer"
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 10
-    }
-  }, /*#__PURE__*/React.createElement(NumField, {
-    label: "Minutos antes da prova",
-    value: min,
-    onChange: setMin,
-    unit: "min",
-    placeholder: "45"
-  })), /*#__PURE__*/React.createElement(PrimaryBtn, {
-    onClick: add,
-    disabled: !txt.trim() || min == null
-  }, /*#__PURE__*/React.createElement(Plus, {
-    size: 16
-  }), " Adicionar passo")));
 }
 
 /* ------------------------------ CORPO ---------------------------- */
@@ -5420,10 +5189,13 @@ function Clinico(props) {
       id: "agenda",
       label: "Consultas"
     }, {
+      id: "consulta",
+      label: "Modo consulta"
+    }, {
       id: "config",
       label: "Dados"
     }]
-  }), sub === "protocolo" && /*#__PURE__*/React.createElement(Protocolo, props), sub === "analises" && /*#__PURE__*/React.createElement(Analises, props), sub === "posop" && /*#__PURE__*/React.createElement(PosOp, props), sub === "agenda" && /*#__PURE__*/React.createElement(AgendaMedica, props), sub === "config" && /*#__PURE__*/React.createElement(Config, props));
+  }), sub === "protocolo" && /*#__PURE__*/React.createElement(Protocolo, props), sub === "analises" && /*#__PURE__*/React.createElement(Analises, props), sub === "posop" && /*#__PURE__*/React.createElement(PosOp, props), sub === "agenda" && /*#__PURE__*/React.createElement(AgendaMedica, props), sub === "consulta" && /*#__PURE__*/React.createElement(ModoConsulta, props), sub === "config" && /*#__PURE__*/React.createElement(Config, props));
 }
 function Protocolo({
   proto,
@@ -6804,19 +6576,23 @@ function iconeAlerta(k) {
   if (k === "op") return /*#__PURE__*/React.createElement(Scissors, p);
   return /*#__PURE__*/React.createElement(AlertTriangle, p);
 }
-function Insights({
-  days,
-  cfg,
-  proto,
-  analyses,
-  strength,
-  swim,
-  alertas
-}) {
+function Insights(D) {
+  const {
+    days,
+    cfg,
+    proto,
+    analyses,
+    strength,
+    alertas
+  } = D;
   const [sub, setSub] = useState("alertas");
-  const cors = useMemo(() => correlacoes(days, cfg), [days, cfg]);
-  const brief = useMemo(() => briefingSemanal(days, cfg, proto, swim), [days, cfg, proto, swim]);
-  const conq = useMemo(() => conquistas(days, strength, swim, proto, cfg), [days, strength, swim, proto, cfg]);
+  const cors = useMemo(() => {
+    const l = correlacoes(days, cfg);
+    const e = correlacaoEstudo(days);
+    return e ? [...l, e] : l;
+  }, [days, cfg]);
+  const brief = useMemo(() => briefingSemanal(days, cfg, proto), [days, cfg, proto]);
+  const conq = useMemo(() => conquistas(days, strength, proto, cfg), [days, strength, proto, cfg]);
   const sevCor = {
     alta: C.warn,
     media: C.amber,
@@ -6839,6 +6615,12 @@ function Insights({
       id: "alertas",
       label: `Alertas${alertas.length ? ` (${alertas.length})` : ""}`
     }, {
+      id: "avisos",
+      label: "Avisos"
+    }, {
+      id: "calendario",
+      label: "Calendário"
+    }, {
       id: "semana",
       label: "Semana"
     }, {
@@ -6848,6 +6630,13 @@ function Insights({
       id: "conquistas",
       label: "Conquistas"
     }]
+  }), sub === "avisos" && /*#__PURE__*/React.createElement(Avisos, D), sub === "calendario" && /*#__PURE__*/React.createElement(Calendario, {
+    days: days,
+    proto: proto,
+    cfg: cfg
+  }), sub === "alertas" && /*#__PURE__*/React.createElement(CardImune, {
+    days: days,
+    cfg: cfg
   }), sub === "alertas" && (alertas.length === 0 ? /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
     icon: /*#__PURE__*/React.createElement(Check, {
       size: 18,
@@ -7012,7 +6801,7 @@ function Insights({
       size: 18,
       color: C.teal
     }),
-    hint: "Nada disto muda o teu tempo aos 100 livres. Mas a consist\xEAncia sim \u2014 e a consist\xEAncia mede-se."
+    hint: "Nada disto te faz nadar mais depressa por si. Mas a consist\xEAncia sim \u2014 e a consist\xEAncia mede-se."
   }, "Conquistas"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
@@ -7083,7 +6872,6 @@ function textReport(D) {
     days,
     strength,
     analyses,
-    swim,
     proto,
     cfg,
     agenda
@@ -7091,7 +6879,9 @@ function textReport(D) {
   const keys = Object.keys(days).filter(k => k >= daysAgoKey(14)).sort();
   const L = ["RELATÓRIO DE RECUPERAÇÃO — Guilherme Novais", `Últimos 14 dias (até ${prettyDate(dayKey())})`, ""];
   const carga = metricasCarga(days),
-    sono = metricasSono(days, cfg.sonoAlvo);
+    sono = metricasSono(days, cfg.sonoAlvo),
+    imu = riscoImune(days, cfg);
+  L.push(`Risco imunitário: ${imu.total}/100 (${imu.banda.t})`);
   if (keys.length) {
     const M = keys.map(k => days[k].morning).filter(Boolean);
     L.push(`Sono médio: ${r1(avg(M.map(m => m.sono)))} h · Qualidade: ${r1(avg(M.map(m => m.qualidadeSono)))}/5 · Dívida 7d: ${sono.debt7} h`);
@@ -7108,14 +6898,6 @@ function textReport(D) {
       g[s.ex] = Math.max(g[s.ex] || 0, s.peso);
     });
     L.push("Recordes de força: " + Object.entries(g).map(([n, v]) => `${n} ${v}kg`).join(", "));
-  }
-  if (swim && swim.length) {
-    const g = {};
-    swim.forEach(s => {
-      const k = `${s.prova} (${s.piscina})`;
-      if (g[k] == null || s.cs < g[k]) g[k] = s.cs;
-    });
-    L.push("Recordes na água: " + Object.entries(g).map(([n, v]) => `${n} ${fmtTempo(v)}`).join(", "));
   }
   const alerts = motorAlertas(days, cfg, proto, analyses);
   if (alerts.length) {
@@ -7136,7 +6918,6 @@ async function generatePdf(D) {
     days,
     strength,
     analyses,
-    swim,
     proto,
     cfg,
     agenda
@@ -7277,7 +7058,7 @@ async function generatePdf(D) {
     Es.forEach(e => {
       if (e.treino) cont[e.treino] = (cont[e.treino] || 0) + 1;
     });
-    table("Treino e carga", [["Sessões", Object.entries(cont).map(([k, v]) => `${k} ${v}`).join(", ") || "—"], ["RPE médio", `${r1(avg(Es.map(e => e.rpe)))} / 10`], ["Carga semanal (sRPE)", carga.semana != null ? `${carga.semana} u${carga.deltaSemana != null ? ` (${carga.deltaSemana > 0 ? "+" : ""}${carga.deltaSemana}% vs semana anterior)` : ""}` : "—"], ["ACWR (agudo:crónico)", carga.acwr != null ? `${carga.acwr} — ${bandaAcwr(carga.acwr).t}` : "—"], ["Monotonia / strain", `${carga.mono != null ? carga.mono : "—"} / ${carga.strain != null ? carga.strain : "—"}`], ["Volume total na água", `${sum(Es.map(e => e.metros))} m`]]);
+    table("Treino e carga", [["Sessões", Object.entries(cont).map(([k, v]) => `${k} ${v}`).join(", ") || "—"], ["RPE médio", `${r1(avg(Es.map(e => e.rpe)))} / 10`], ["Carga semanal (sRPE)", carga.semana != null ? `${carga.semana} u${carga.deltaSemana != null ? ` (${carga.deltaSemana > 0 ? "+" : ""}${carga.deltaSemana}% vs semana anterior)` : ""}` : "—"], ["ACWR (agudo:crónico)", carga.acwr != null ? `${carga.acwr} — ${bandaAcwr(carga.acwr).t}` : "—"], ["Monotonia / strain", `${carga.mono != null ? carga.mono : "—"} / ${carga.strain != null ? carga.strain : "—"}`], ["Volume total na água", `${sum(Es.map(e => e.metros))} m`], ["Estudo e explicações", `${sum(Es.map(e => e.estudo))} min em 14 dias`]]);
   }
   const bodyKeys = Object.keys(days).filter(k => days[k].body?.peso != null).sort();
   if (bodyKeys.length) {
@@ -7290,6 +7071,8 @@ async function generatePdf(D) {
     if (hidras.length) rows.push(["Perda por suor (média)", `${r1(avg(hidras.map(h => h.pct)))}% do peso · ${r1(avg(hidras.map(h => h.taxa)))} L/h`]);
     table("Físico e hidratação", rows);
   }
+  const imune = riscoImune(days, cfg);
+  table("Defesas (risco imunitário)", [["Índice", `${imune.total}/100 — ${imune.banda.t}`]].concat(imune.partes.map(x => [x.k, x.txt])));
   if (iso || po) {
     const rows = [];
     if (iso) {
@@ -7322,17 +7105,6 @@ async function generatePdf(D) {
     });
     table("Força — recordes", Object.entries(g).map(([n, v]) => [n, `${v} kg`]));
   }
-  if (swim && swim.length) {
-    const g = {};
-    swim.forEach(s => {
-      const k = `${s.prova} · ${s.piscina}`;
-      if (g[k] == null || s.cs < g[k]) g[k] = s.cs;
-    });
-    table("Natação — recordes pessoais", Object.entries(g).map(([n, v]) => [n, fmtTempo(v)]));
-    const rec = swim.filter(s => s.date >= daysAgoKey(30)).sort((a, b) => a.date < b.date ? 1 : -1).slice(0, 12);
-    if (rec.length) table("Tempos recentes (30 dias)", rec.map(s => [`${prettyDate(s.date)} · ${s.prova}`, `${fmtTempo(s.cs)} (${s.piscina}, ${s.contexto})`]));
-  }
-
   /* Alertas */
   const alerts = motorAlertas(days, cfg, proto, analyses);
   if (alerts.length) {
@@ -7445,6 +7217,7 @@ async function generatePdf(D) {
     if (e.treino) rows.push(["Treino", `${e.treino}${e.duracao ? ` · ${e.duracao} min` : ""}${e.rpe ? ` · RPE ${e.rpe}/10` : ""}${e.metros ? ` · ${e.metros} m` : ""}`]);
     const cg = cargaDoDia(days[k]);
     if (cg != null) rows.push(["Carga", `${cg} u`]);
+    if (e.estudo != null) rows.push(["Estudo", `${e.estudo} min`]);
     if (e.dor) rows.push(["Dor/lesão", e.dor]);
     if (e.nota) rows.push(["Nota", e.nota]);
     if (b.peso != null) rows.push(["Peso", `${b.peso} kg${b.gordura ? ` · ${b.gordura}%` : ""}`]);
@@ -7490,7 +7263,6 @@ function Relatorio(D) {
     days,
     strength,
     analyses,
-    swim,
     proto,
     cfg,
     agenda,
@@ -7498,7 +7270,6 @@ function Relatorio(D) {
     saveDays,
     saveStrength,
     saveAnalyses,
-    saveSwim,
     saveProto,
     saveCfg,
     saveAgenda
@@ -7530,7 +7301,6 @@ function Relatorio(D) {
       days,
       strength,
       analyses,
-      swim,
       proto,
       cfg,
       agenda
@@ -7557,11 +7327,12 @@ function Relatorio(D) {
       await saveDays(d.days || {});
       await saveStrength(d.strength || []);
       await saveAnalyses(d.analyses || []);
-      await saveSwim(d.swim || []);
-      await saveProto(d.proto || {
+      await saveProto(d.proto && d.proto.itens ? {
+        itens: d.proto.itens,
+        done: d.proto.done || {}
+      } : {
         itens: PROTO_DEFAULT,
-        done: {},
-        prova: PROVA_DEFAULT
+        done: {}
       });
       await saveCfg({
         ...DEFAULT_CONFIG,
@@ -7592,8 +7363,8 @@ function Relatorio(D) {
     label: "An\xE1lises",
     value: (analyses || []).length
   }), /*#__PURE__*/React.createElement(Stat, {
-    label: "Tempos",
-    value: (swim || []).length
+    label: "Sinais",
+    value: motorAlertas(days, cfg, proto, analyses).length
   })), /*#__PURE__*/React.createElement("div", {
     style: {
       margin: "16px 0 12px"
@@ -7711,6 +7482,1046 @@ function ctrlBtn() {
     justifyContent: "center",
     flexShrink: 0
   };
+}
+
+/* ================================================================ */
+/*                    v3 — offline, avisos e extras                  */
+/* ================================================================ */
+
+/* ------------------------ Service worker ------------------------- */
+let _swReg = null;
+async function registarSW() {
+  try {
+    if (!("serviceWorker" in navigator)) return null;
+    _swReg = await navigator.serviceWorker.register("./sw.js");
+    return _swReg;
+  } catch (e) {
+    return null;
+  }
+}
+function swPronto() {
+  return _swReg || (navigator.serviceWorker && navigator.serviceWorker.controller ? navigator.serviceWorker.ready : null);
+}
+
+/* --------------------------- Notificações ------------------------ */
+function notifSuportado() {
+  return typeof window !== "undefined" && "Notification" in window;
+}
+function permissaoNotif() {
+  try {
+    return notifSuportado() ? Notification.permission : "unsupported";
+  } catch (e) {
+    return "unsupported";
+  }
+}
+async function pedirPermissaoNotif() {
+  if (!notifSuportado()) return "unsupported";
+  try {
+    return await Notification.requestPermission();
+  } catch (e) {
+    return "denied";
+  }
+}
+async function notificar(titulo, corpo, tag) {
+  if (permissaoNotif() !== "granted") return false;
+  try {
+    const reg = _swReg || (navigator.serviceWorker ? await navigator.serviceWorker.getRegistration() : null);
+    if (reg && reg.showNotification) {
+      await reg.showNotification(titulo, {
+        body: corpo,
+        tag: tag || "recup",
+        data: {
+          url: "./"
+        }
+      });
+      return true;
+    }
+    new Notification(titulo, {
+      body: corpo,
+      tag: tag || "recup"
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+async function pedirSyncPeriodico() {
+  try {
+    const reg = _swReg || (navigator.serviceWorker ? await navigator.serviceWorker.getRegistration() : null);
+    if (!reg || !reg.periodicSync) return false;
+    const st = await navigator.permissions.query({
+      name: "periodic-background-sync"
+    });
+    if (st.state !== "granted") return false;
+    await reg.periodicSync.register("verificar-protocolo", {
+      minInterval: 4 * 60 * 60 * 1000
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+async function enviarEstadoSW(estado) {
+  try {
+    const reg = _swReg || (navigator.serviceWorker ? await navigator.serviceWorker.getRegistration() : null);
+    if (reg && reg.active) reg.active.postMessage({
+      tipo: "estado",
+      estado
+    });
+  } catch (e) {}
+}
+
+/* ------------------------- Lembretes ----------------------------- */
+const HORAS_DEFAULT = {
+  "Jejum": "07:45",
+  "Pré-treino": "16:30",
+  "Pós-treino": "19:30",
+  "Jantar": "21:00",
+  "Noite": "22:30"
+};
+function horasLembrete(cfg) {
+  return {
+    ...HORAS_DEFAULT,
+    ...(cfg.lembretes && cfg.lembretes.horas || {})
+  };
+}
+function momentosDoDia(proto, cfg) {
+  const horas = horasLembrete(cfg);
+  const key = dayKey();
+  const done = (proto.done || {})[key] || [];
+  return MOMENTOS.map(m => {
+    const itens = (proto.itens || []).filter(i => !i.off && i.momento === m);
+    const pend = itens.filter(i => done.indexOf(i.id) < 0);
+    return {
+      nome: m,
+      hora: horas[m],
+      total: itens.length,
+      pendentes: pend.length,
+      exemplo: pend.length ? pend[0].nome : ""
+    };
+  }).filter(x => x.total > 0);
+}
+function marcaFeita(k) {
+  try {
+    return !!localStorage.getItem(k);
+  } catch (e) {
+    return false;
+  }
+}
+function marcar(k) {
+  try {
+    localStorage.setItem(k, "1");
+  } catch (e) {}
+}
+function verificarLembretes(proto, cfg, alertas) {
+  const ligado = cfg.lembretes && cfg.lembretes.on;
+  const momentos = momentosDoDia(proto, cfg);
+  enviarEstadoSW({
+    dia: dayKey(),
+    lembretes: !!ligado,
+    momentos
+  });
+  if (!ligado || permissaoNotif() !== "granted") return;
+  const agora = new Date();
+  const hhmm = `${String(agora.getHours()).padStart(2, "0")}:${String(agora.getMinutes()).padStart(2, "0")}`;
+  const key = dayKey();
+  momentos.forEach(m => {
+    if (!m.hora || m.hora > hhmm || m.pendentes === 0) return;
+    const marcaK = `notif:${key}:${m.nome}`;
+    if (marcaFeita(marcaK)) return;
+    marcar(marcaK);
+    notificar(`Protocolo — ${m.nome}`, m.pendentes === 1 ? `Falta 1 toma: ${m.exemplo}` : `Faltam ${m.pendentes} tomas (${m.exemplo}…)`, marcaK);
+  });
+  if (cfg.lembretes.alertas !== false) {
+    const altos = (alertas || []).filter(a => a.sev === "alta");
+    if (altos.length) {
+      const marcaK = `notif:${key}:sinais:${altos.length}`;
+      if (!marcaFeita(marcaK)) {
+        marcar(marcaK);
+        notificar(altos.length === 1 ? "Um sinal a precisar de atenção" : `${altos.length} sinais a precisar de atenção`, altos[0].t, marcaK);
+      }
+    }
+  }
+  if (cfg.lembretes.diario !== false && hhmm >= "22:00") {
+    const falta = momentos.reduce((a, m) => a + m.pendentes, 0);
+    const marcaK = `notif:${key}:fecho`;
+    if (falta > 0 && !marcaFeita(marcaK)) {
+      marcar(marcaK);
+      notificar("Fecho do dia", `Ficaram ${falta} toma(s) por marcar hoje. Ainda vais a tempo.`, marcaK);
+    }
+  }
+}
+
+/* -------------------- Previsão de prontidão ---------------------- */
+function preverAmanha(days, cfg, horasSono) {
+  const ks = [];
+  for (let i = 6; i >= 0; i--) ks.push(daysAgoKey(i));
+  const M = ks.map(k => days[k] ? days[k].morning : null).filter(Boolean);
+  if (M.length < 2) return null;
+  const baseHR = avg(Object.keys(days).map(k => days[k].morning ? days[k].morning.fcRepouso : null));
+  const carga = metricasCarga(days),
+    sono = metricasSono(days, cfg.sonoAlvo);
+  const cargaHoje = cargaDoDia(days[dayKey()]);
+  const cargaMedia = avg(carga.serie28.map(x => x.v).filter(x => x != null));
+  const puxa = cargaHoje != null && cargaMedia ? clamp((cargaHoje - cargaMedia) / Math.max(120, cargaMedia), -1, 1) : 0;
+  const alvo = cfg.sonoAlvo || 8;
+  const simulado = {
+    sono: horasSono,
+    qualidadeSono: clamp(Math.round(avg(M.map(m => m.qualidadeSono)) || 3), 1, 5),
+    energia: clamp(Math.round((avg(M.map(m => m.energia)) || 3) - puxa), 1, 5),
+    humor: clamp(Math.round(avg(M.map(m => m.humor)) || 3), 1, 5),
+    dores: clamp(Math.round((avg(M.map(m => m.dores)) || 2) + puxa * 1.5), 1, 5),
+    fcRepouso: baseHR ? Math.round(baseHR + puxa * 3) : null
+  };
+  const debt = Math.max(0, sono.debt7 + Math.max(0, alvo - horasSono));
+  const score = readinessScore(simulado, baseHR, {
+    acwr: carga.acwr,
+    debtH: debt
+  });
+  const acordar = (() => {
+    const hs = ks.map(k => days[k] && days[k].morning ? days[k].morning.acordar : null).filter(Boolean);
+    return hs.length ? hs[hs.length - 1] : "07:00";
+  })();
+  return {
+    score,
+    band: readinessBand(score),
+    deitar: minusHours(acordar, horasSono + 0.25),
+    acordar,
+    puxa
+  };
+}
+
+/* ---------------------- Risco imunitário ------------------------- */
+function riscoImune(days, cfg) {
+  const ks = [];
+  for (let i = 13; i >= 0; i--) ks.push(daysAgoKey(i));
+  const M = k => days[k] ? days[k].morning : null;
+  const hrs = ks.map(k => M(k) ? M(k).fcRepouso : null);
+  const base = avg(hrs.slice(0, 9));
+  const ult = hrs.slice(-3).filter(x => x != null);
+  const carga = metricasCarga(days),
+    sono = metricasSono(days, cfg.sonoAlvo);
+  const partes = [];
+  if (base && ult.length) {
+    const d = avg(ult) - base;
+    partes.push({
+      k: "Frequência cardíaca de repouso",
+      v: clamp(d * 7, 0, 35),
+      txt: `${d > 0 ? "+" : ""}${r1(d)} bpm face ao teu normal`
+    });
+  }
+  partes.push({
+    k: "Dívida de sono",
+    v: clamp(sono.debt7 * 4, 0, 30),
+    txt: `${sono.debt7} h esta semana`
+  });
+  if (carga.acwr != null) partes.push({
+    k: "Salto de carga",
+    v: carga.acwr > 1.5 ? 25 : carga.acwr > 1.3 ? 15 : 0,
+    txt: `ACWR ${carga.acwr}`
+  });
+  const hum = avg(ks.slice(-4).map(k => M(k) ? M(k).humor : null));
+  const ene = avg(ks.slice(-4).map(k => M(k) ? M(k).energia : null));
+  if (hum != null && ene != null) partes.push({
+    k: "Energia e humor",
+    v: clamp((6 - (hum + ene) / 2) * 4, 0, 15),
+    txt: `média ${r1((hum + ene) / 2)}/5`
+  });
+  const orl = ks.slice(-3).reduce((a, k) => {
+    const m = M(k);
+    return a + (m && m.sintomas ? m.sintomas.filter(s => SINTOMAS_ORL.indexOf(s) >= 0).length : 0);
+  }, 0);
+  if (orl) partes.push({
+    k: "Sintomas de vias aéreas",
+    v: clamp(orl * 5, 0, 15),
+    txt: `${orl} registo(s) em 3 dias`
+  });
+  const total = clamp(Math.round(partes.reduce((a, p) => a + p.v, 0)), 0, 100);
+  const banda = total >= 55 ? {
+    c: C.warn,
+    t: "Risco alto",
+    d: "Vários sinais a apontar na mesma direção. É o momento típico em que aparece uma constipação — e, com o nariz operado há pouco, isso custa mais a passar. Alivia hoje."
+  } : total >= 30 ? {
+    c: C.amber,
+    t: "Risco moderado",
+    d: "Alguma coisa a acumular-se. Dorme mais uma hora esta noite e evita treinos à máxima intensidade."
+  } : {
+    c: C.good,
+    t: "Risco baixo",
+    d: "As tuas defesas não estão a dar sinais de esforço. Podes treinar com normalidade."
+  };
+  return {
+    total,
+    banda,
+    partes: partes.filter(p => p.v > 0).sort((a, b) => b.v - a.v)
+  };
+}
+
+/* ---------------------- Correlação da escola --------------------- */
+function correlacaoEstudo(days) {
+  const ks = Object.keys(days).sort();
+  const baseHR = avg(ks.map(k => days[k].morning ? days[k].morning.fcRepouso : null));
+  const muito = [],
+    pouco = [];
+  ks.forEach(k => {
+    const e = days[k].evening;
+    const kn = addDaysKey(k, 1);
+    const r = readinessScore(days[kn] && days[kn].morning, baseHR);
+    if (!e || e.estudo == null || r == null) return;
+    (e.estudo >= 120 ? muito : pouco).push(r);
+  });
+  if (muito.length < 3 || pouco.length < 3) return null;
+  const d = Math.round(avg(muito) - avg(pouco));
+  return {
+    t: "Horas de estudo ⇢ prontidão seguinte",
+    v: `${d > 0 ? "+" : ""}${d} pontos`,
+    d: `Nos dias com 2 h ou mais de estudo e explicações, acordas com ${Math.abs(d)} pontos ${d > 0 ? "a mais" : "a menos"} de prontidão. É a alavanca de que quase ninguém se lembra.`,
+    n: muito.length + pouco.length,
+    c: d < 0 ? C.amber : C.good
+  };
+}
+
+/* ---------------------- Indicador de sincronização --------------- */
+function SyncPill() {
+  const [st, setSt] = useState(syncStatus());
+  useEffect(() => {
+    setSt(syncStatus());
+    const off = onSyncChange(setSt);
+    return off;
+  }, []);
+  const cor = !st.online ? C.amber : st.pendentes > 0 ? C.teal : C.good;
+  const Icone = !st.online ? CloudOff : st.aSincronizar ? RefreshCw : Cloud;
+  const txt = !st.online ? st.pendentes ? `${st.pendentes} por enviar` : "Offline" : st.aSincronizar ? "A enviar…" : st.pendentes > 0 ? `${st.pendentes} por enviar` : "Sincronizado";
+  return /*#__PURE__*/React.createElement("button", {
+    onClick: () => forcarSync(),
+    title: st.ultima ? "Última sincronização: " + new Date(st.ultima).toLocaleString("pt-PT") : "",
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 5,
+      border: `1px solid ${cor}44`,
+      background: `${cor}14`,
+      color: cor,
+      borderRadius: 20,
+      padding: "5px 10px",
+      fontSize: 11,
+      fontWeight: 700,
+      cursor: "pointer",
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement(Icone, {
+    size: 13
+  }), " ", txt);
+}
+
+/* -------------------- Previsão (cartão do Diário) ---------------- */
+function CardPrevisao({
+  days,
+  cfg
+}) {
+  const [h, setH] = useState(cfg.sonoAlvo || 8);
+  const p = preverAmanha(days, cfg, h);
+  if (!p) return null;
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 18
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Sparkles, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Simula\xE7\xE3o a partir dos teus \xFAltimos dias e do treino de hoje. N\xE3o \xE9 uma promessa \u2014 \xE9 a diferen\xE7a que o sono de hoje faz na manh\xE3 de amanh\xE3."
+  }, "Como vais acordar amanh\xE3"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 16
+    }
+  }, /*#__PURE__*/React.createElement(Ring, {
+    value: p.score,
+    size: 90,
+    stroke: 10,
+    color: p.band.c
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      fontWeight: 700,
+      color: p.band.c,
+      marginBottom: 4
+    }
+  }, p.band.t), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12.5,
+      color: C.muted,
+      margin: 0,
+      lineHeight: 1.5
+    }
+  }, "Se dormires ", /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: C.heading
+    }
+  }, h, " h"), " esta noite."))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "range",
+    min: 5,
+    max: 10,
+    step: 0.5,
+    value: h,
+    onChange: e => setH(Number(e.target.value)),
+    style: {
+      width: "100%",
+      accentColor: C.teal
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      fontSize: 11,
+      color: C.muted
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "5 h"), /*#__PURE__*/React.createElement("span", null, "10 h"))), p.deitar && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.tealSoft,
+      borderRadius: 12,
+      padding: "11px 13px",
+      marginTop: 14,
+      fontSize: 12.5,
+      color: C.heading,
+      lineHeight: 1.5
+    }
+  }, "Para isso, luz apagada por volta das ", /*#__PURE__*/React.createElement("b", null, p.deitar), " (a acordar \xE0s ", p.acordar, ")."), p.puxa > 0.25 && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11.5,
+      color: C.muted,
+      marginTop: 10,
+      lineHeight: 1.5
+    }
+  }, "O treino de hoje foi acima do teu habitual \u2014 est\xE1 j\xE1 contado nesta previs\xE3o."));
+}
+
+/* -------------------- Cartão de risco imunitário ----------------- */
+function CardImune({
+  days,
+  cfg
+}) {
+  const r = riscoImune(days, cfg);
+  if (!r.partes.length) return null;
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      borderLeft: `4px solid ${r.banda.c}`,
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Shield, {
+      size: 18,
+      color: r.banda.c
+    }),
+    hint: "Junta frequ\xEAncia card\xEDaca de repouso, d\xEDvida de sono, salto de carga, humor e sintomas de garganta e nariz. \xC9 um aviso precoce, n\xE3o um diagn\xF3stico."
+  }, "Defesas"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 16,
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement(Ring, {
+    value: r.total,
+    size: 88,
+    stroke: 10,
+    color: r.banda.c,
+    label: "risco"
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      fontWeight: 700,
+      color: r.banda.c,
+      marginBottom: 4
+    }
+  }, r.banda.t), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12.5,
+      color: C.muted,
+      margin: 0,
+      lineHeight: 1.5
+    }
+  }, r.banda.d))), r.partes.map(p => /*#__PURE__*/React.createElement("div", {
+    key: p.k,
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 7
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11.5,
+      color: C.muted,
+      width: 150,
+      flexShrink: 0
+    }
+  }, p.k), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement(Progress, {
+    pct: p.v / 35 * 100,
+    color: r.banda.c
+  })), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 10.5,
+      color: C.muted,
+      width: 96,
+      textAlign: "right"
+    }
+  }, p.txt))));
+}
+
+/* --------------------------- Calendário -------------------------- */
+function Calendario({
+  days,
+  proto,
+  cfg
+}) {
+  const [off, setOff] = useState(0);
+  const [sel, setSel] = useState(null);
+  const hoje = new Date();
+  const ref = new Date(hoje.getFullYear(), hoje.getMonth() + off, 1);
+  const ano = ref.getFullYear(),
+    mes = ref.getMonth();
+  const primeiro = new Date(ano, mes, 1).getDay();
+  const nDias = new Date(ano, mes + 1, 0).getDate();
+  const baseHR = avg(Object.keys(days).map(k => days[k].morning ? days[k].morning.fcRepouso : null));
+  const nomes = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  const ativos = (proto.itens || []).filter(i => !i.off).length;
+  const celulas = [];
+  for (let i = 0; i < primeiro; i++) celulas.push(null);
+  for (let d = 1; d <= nDias; d++) celulas.push(`${ano}-${String(mes + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+  const info = k => {
+    const d = days[k];
+    if (!d) return null;
+    const rs = readinessScore(d.morning, baseHR);
+    const done = ((proto.done || {})[k] || []).length;
+    return {
+      rs,
+      treino: d.evening && d.evening.treino,
+      carga: cargaDoDia(d),
+      proto: ativos ? Math.round(done / ativos * 100) : null,
+      peso: d.body && d.body.peso,
+      sono: d.morning && d.morning.sono
+    };
+  };
+  const selInfo = sel ? info(sel) : null;
+  return /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOff(off - 1),
+    style: ctrlBtn()
+  }, /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 16,
+    color: C.muted,
+    style: {
+      transform: "rotate(180deg)"
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      textAlign: "center",
+      fontFamily: SERIF,
+      fontSize: 17,
+      color: C.heading,
+      fontWeight: 600
+    }
+  }, nomes[mes], " ", ano), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOff(Math.min(0, off + 1)),
+    style: {
+      ...ctrlBtn(),
+      opacity: off >= 0 ? 0.4 : 1
+    }
+  }, /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 16,
+    color: C.muted
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "repeat(7,1fr)",
+      gap: 4,
+      marginBottom: 6
+    }
+  }, ["D", "S", "T", "Q", "Q", "S", "S"].map((d, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      textAlign: "center",
+      fontSize: 10,
+      color: C.muted,
+      fontWeight: 700
+    }
+  }, d))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "grid",
+      gridTemplateColumns: "repeat(7,1fr)",
+      gap: 4
+    }
+  }, celulas.map((k, i) => {
+    if (!k) return /*#__PURE__*/React.createElement("div", {
+      key: i
+    });
+    const n = info(k);
+    const isHoje = k === dayKey();
+    const cor = n && n.rs != null ? readinessBand(n.rs).c : null;
+    return /*#__PURE__*/React.createElement("button", {
+      key: k,
+      onClick: () => setSel(sel === k ? null : k),
+      style: {
+        aspectRatio: "1/1",
+        borderRadius: 10,
+        cursor: "pointer",
+        position: "relative",
+        border: sel === k ? `2px solid ${C.primary}` : isHoje ? `1.5px solid ${C.teal}` : `1px solid ${C.line}`,
+        background: cor ? `${cor}26` : C.input,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 1,
+        padding: 0
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 11,
+        fontWeight: 700,
+        color: cor || C.muted
+      }
+    }, Number(k.slice(-2))), /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "flex",
+        gap: 2,
+        height: 4
+      }
+    }, n && n.treino && n.treino !== "Descanso" && /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 4,
+        height: 4,
+        borderRadius: 4,
+        background: C.teal
+      }
+    }), n && n.proto === 100 && /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 4,
+        height: 4,
+        borderRadius: 4,
+        background: C.good
+      }
+    }), n && n.peso != null && /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 4,
+        height: 4,
+        borderRadius: 4,
+        background: C.amber
+      }
+    })));
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 12,
+      marginTop: 14,
+      fontSize: 10.5,
+      color: C.muted
+    }
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: "inline-block",
+      width: 6,
+      height: 6,
+      borderRadius: 4,
+      background: C.teal,
+      marginRight: 4
+    }
+  }), "treino"), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: "inline-block",
+      width: 6,
+      height: 6,
+      borderRadius: 4,
+      background: C.good,
+      marginRight: 4
+    }
+  }), "protocolo completo"), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("span", {
+    style: {
+      display: "inline-block",
+      width: 6,
+      height: 6,
+      borderRadius: 4,
+      background: C.amber,
+      marginRight: 4
+    }
+  }), "pesagem"), /*#__PURE__*/React.createElement("span", null, "cor de fundo = prontid\xE3o")), sel && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 16,
+      background: C.input,
+      borderRadius: 14,
+      padding: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13.5,
+      fontWeight: 700,
+      color: C.heading,
+      marginBottom: 6
+    }
+  }, weekdayShort(sel), " \xB7 ", prettyDate(sel)), selInfo ? /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12.5,
+      color: C.muted,
+      margin: 0,
+      lineHeight: 1.6
+    }
+  }, selInfo.rs != null ? `Prontidão ${selInfo.rs}/100. ` : "", selInfo.sono != null ? `${selInfo.sono} h de sono. ` : "", selInfo.treino ? `${selInfo.treino}${selInfo.carga ? ` · carga ${selInfo.carga} u` : ""}. ` : "", selInfo.proto != null ? `Protocolo ${selInfo.proto}%. ` : "", selInfo.peso != null ? `${selInfo.peso} kg.` : "") : /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12.5,
+      color: C.muted,
+      margin: 0
+    }
+  }, "Sem registos neste dia.")));
+}
+
+/* --------------------------- Modo consulta ----------------------- */
+function resumoConsulta(D) {
+  const {
+    days,
+    cfg,
+    proto,
+    analyses,
+    agenda
+  } = D;
+  const baseHR = avg(Object.keys(days).map(k => days[k].morning ? days[k].morning.fcRepouso : null));
+  const carga = metricasCarga(days),
+    sono = metricasSono(days, cfg.sonoAlvo);
+  const ks = [];
+  for (let i = 13; i >= 0; i--) ks.push(daysAgoKey(i));
+  const rd = ks.map(k => readinessScore(days[k] && days[k].morning, baseHR, {
+    acwr: carga.acwr,
+    debtH: sono.debt7
+  })).filter(x => x != null);
+  const iso = isoInfo(cfg),
+    po = posOpInfo(cfg),
+    im = riscoImune(days, cfg);
+  const cont = {};
+  ks.forEach(k => {
+    const m = days[k] && days[k].morning;
+    if (m && m.sintomas) m.sintomas.forEach(s => {
+      cont[s] = (cont[s] || 0) + 1;
+    });
+  });
+  const sint = Object.entries(cont).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const ult = (analyses || []).slice().sort((a, b) => a.date < b.date ? 1 : -1)[0];
+  const fora = ult ? (ult.params || []).map(p => ({
+    p,
+    r: avaliaValor(p.n, p.v)
+  })).filter(x => x.r && x.r.est !== "normal") : [];
+  const bks = Object.keys(days).filter(k => days[k].body && days[k].body.peso != null).sort();
+  return {
+    linhas: [["Período", `últimos 14 dias, até ${prettyDate(dayKey())}`], ["Prontidão média", rd.length ? `${r0(avg(rd))}/100 (mín. ${r0(Math.min.apply(null, rd))})` : "—"], ["Sono", sono.media != null ? `${r1(sono.media)} h/noite · dívida ${sono.debt7} h · ${sono.curtas7}/7 noites curtas` : "—"], ["FC repouso", `${r1(avg(ks.map(k => days[k] && days[k].morning ? days[k].morning.fcRepouso : null)))} bpm`], ["Carga de treino", carga.semana != null ? `${carga.semana} u/semana · ACWR ${carga.acwr != null ? carga.acwr : "—"}` : "—"], ["Risco imunitário", `${im.total}/100 — ${im.banda.t.toLowerCase()}`], ["Peso", bks.length ? `${days[bks[bks.length - 1]].body.peso} kg (${prettyDate(bks[bks.length - 1])})` : "—"], ["Protocolo", adesaoProtocolo(proto, 7) != null ? `${adesaoProtocolo(proto, 7)}% de adesão (7 d)` : "—"], ["Isotretinoína", iso ? `dia ${iso.dias + 1} · ${iso.cumulativa} mg/kg acumulados · análises ${iso.proximaAnalise ? prettyDate(iso.proximaAnalise) : "—"}` : "—"], ["Pós-operatório", po ? `dia ${po.dias} · ${po.atual.t}` : "—"], ["Sintomas mais frequentes", sint.length ? sint.map(([s, n]) => `${s} (${n})`).join(", ") : "nenhum"], ["Valores fora do intervalo", fora.length ? fora.map(x => `${x.p.n} ${x.p.v} ${x.r.est}`).join(", ") : "nenhum"]],
+    perguntas: (agenda.perguntas || []).filter(p => !p.feita)
+  };
+}
+function ModoConsulta(D) {
+  const {
+    flash
+  } = D;
+  const r = resumoConsulta(D);
+  const copiar = async () => {
+    const txt = "RESUMO PARA CONSULTA — Guilherme Novais\n" + r.linhas.map(l => `${l[0]}: ${l[1]}`).join("\n") + (r.perguntas.length ? "\n\nPerguntas:\n" + r.perguntas.map((p, i) => `${i + 1}. (${p.para}) ${p.txt}`).join("\n") : "");
+    try {
+      await navigator.clipboard.writeText(txt);
+      flash("Resumo copiado");
+    } catch (e) {
+      flash("Não consegui copiar");
+    }
+  };
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Stethoscope, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Uma p\xE1gina s\xF3, em letra grande, para mostrares no telem\xF3vel dentro do consult\xF3rio. Tudo o que interessa em vinte segundos."
+  }, "Resumo para a consulta"), r.linhas.map((l, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      padding: "10px 0",
+      borderTop: i ? `1px solid ${C.line}` : "none"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10.5,
+      color: C.muted,
+      fontWeight: 700,
+      textTransform: "uppercase",
+      letterSpacing: 0.5
+    }
+  }, l[0]), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15.5,
+      color: C.heading,
+      fontWeight: 600,
+      marginTop: 3,
+      lineHeight: 1.35
+    }
+  }, l[1]))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(GhostBtn, {
+    onClick: copiar
+  }, /*#__PURE__*/React.createElement(Copy, {
+    size: 15
+  }), " Copiar resumo"))), r.perguntas.length > 0 && /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(MessageCircle, {
+      size: 18,
+      color: C.teal
+    })
+  }, "Perguntas por fazer"), r.perguntas.map((p, i) => /*#__PURE__*/React.createElement("div", {
+    key: p.id,
+    style: {
+      padding: "11px 0",
+      borderTop: i ? `1px solid ${C.line}` : "none"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      color: C.ink,
+      lineHeight: 1.45
+    }
+  }, i + 1, ". ", p.txt), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11.5,
+      color: C.muted,
+      marginTop: 3
+    }
+  }, p.para)))));
+}
+
+/* ---------------------------- Avisos ----------------------------- */
+function Avisos({
+  cfg,
+  saveCfg,
+  proto,
+  flash,
+  alertas
+}) {
+  const [perm, setPerm] = useState(permissaoNotif());
+  const [periodico, setPeriodico] = useState(false);
+  const lem = cfg.lembretes || {
+    on: false,
+    horas: HORAS_DEFAULT,
+    alertas: true,
+    diario: true
+  };
+  const setLem = patch => saveCfg({
+    ...cfg,
+    lembretes: {
+      ...lem,
+      ...patch
+    }
+  });
+  const horas = horasLembrete(cfg);
+  const ligar = async () => {
+    const p = await pedirPermissaoNotif();
+    setPerm(p);
+    if (p === "granted") {
+      setLem({
+        on: true
+      });
+      const ok = await pedirSyncPeriodico();
+      setPeriodico(ok);
+      notificar("Avisos ligados", "Vou lembrar-te das tomas do protocolo e avisar-te dos sinais importantes.", "teste");
+    } else flash("O telemóvel não deu permissão");
+  };
+  const momentos = momentosDoDia(proto, cfg);
+  const iosPWA = typeof navigator !== "undefined" && /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.navigator.standalone;
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Bell, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Notifica\xE7\xF5es no telem\xF3vel para as tomas do protocolo e para os sinais que precisam de aten\xE7\xE3o."
+  }, "Avisos no telem\xF3vel"), iosPWA && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.amberSoft,
+      borderRadius: 12,
+      padding: "12px 14px",
+      marginBottom: 16,
+      fontSize: 12.5,
+      color: C.warn,
+      lineHeight: 1.55
+    }
+  }, /*#__PURE__*/React.createElement("b", null, "No iPhone h\xE1 um passo obrigat\xF3rio:"), " abre esta p\xE1gina no Safari, toca em Partilhar e escolhe \xABAdicionar ao ecr\xE3 principal\xBB. As notifica\xE7\xF5es s\xF3 funcionam quando a app \xE9 aberta a partir desse \xEDcone."), perm !== "granted" ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: C.muted,
+      lineHeight: 1.6,
+      marginTop: 0
+    }
+  }, perm === "denied" ? "As notificações estão bloqueadas para este site. Tens de as reativar nas definições do telemóvel (Safari/Chrome → Notificações)." : "Ainda não deste permissão para avisos."), /*#__PURE__*/React.createElement(PrimaryBtn, {
+    onClick: ligar
+  }, /*#__PURE__*/React.createElement(Bell, {
+    size: 16
+  }), " Ativar avisos")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(CheckRow, {
+    on: !!lem.on,
+    onToggle: () => setLem({
+      on: !lem.on
+    }),
+    title: "Lembretes do protocolo",
+    sub: "Avisa quando passa a hora e ainda h\xE1 tomas por marcar"
+  }), /*#__PURE__*/React.createElement(CheckRow, {
+    on: lem.alertas !== false,
+    onToggle: () => setLem({
+      alertas: lem.alertas === false
+    }),
+    title: "Sinais importantes",
+    sub: "Avisa uma vez por dia se houver alertas vermelhos"
+  }), /*#__PURE__*/React.createElement(CheckRow, {
+    on: lem.diario !== false,
+    onToggle: () => setLem({
+      diario: lem.diario === false
+    }),
+    title: "Fecho do dia",
+    sub: "\xC0s 22h, se ficaram tomas por marcar"
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(GhostBtn, {
+    onClick: () => notificar("Teste", "Se estás a ler isto, os avisos funcionam.", "teste" + Date.now())
+  }, /*#__PURE__*/React.createElement(Bell, {
+    size: 15
+  }), " Enviar aviso de teste")))), perm === "granted" && /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Timer, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "A que horas queres ser avisado de cada momento do protocolo."
+  }, "Horas dos lembretes"), MOMENTOS.map(m => {
+    const mm = momentos.find(x => x.nome === m);
+    return /*#__PURE__*/React.createElement("div", {
+      key: m,
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "10px 0",
+        borderTop: `1px solid ${C.line}`
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 13.5,
+        fontWeight: 600,
+        color: C.ink
+      }
+    }, m), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: C.muted
+      }
+    }, mm ? `${mm.total} item(ns)${mm.pendentes ? ` · ${mm.pendentes} por marcar hoje` : " · tudo feito hoje"}` : "sem itens")), /*#__PURE__*/React.createElement("input", {
+      type: "time",
+      value: horas[m] || "",
+      onChange: e => setLem({
+        horas: {
+          ...horas,
+          [m]: e.target.value
+        }
+      }),
+      style: {
+        border: `1px solid ${C.line}`,
+        borderRadius: 10,
+        padding: "8px 10px",
+        fontSize: 15,
+        background: C.input,
+        color: C.ink,
+        fontFamily: FONT
+      }
+    }));
+  })), /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 16,
+      padding: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement(Info, {
+    size: 15,
+    color: C.teal
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13.5,
+      fontWeight: 700,
+      color: C.heading
+    }
+  }, "Como funcionam")), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12.5,
+      color: C.muted,
+      lineHeight: 1.6,
+      margin: 0
+    }
+  }, "A app n\xE3o tem servidor de mensagens, por isso os avisos s\xE3o gerados no pr\xF3prio telem\xF3vel. Chegam com fiabilidade quando a app est\xE1 aberta ou foi aberta h\xE1 pouco", periodico ? ", e o Android ainda faz verificações periódicas em segundo plano" : "", ". Se falhares um, o aviso aparece na primeira vez que abrires a app nesse dia. Sem internet continua tudo a funcionar.")), alertas && alertas.filter(a => a.sev === "alta").length > 0 && /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 16,
+      padding: 16,
+      borderLeft: `4px solid ${C.warn}`
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: C.warn,
+      marginBottom: 6
+    }
+  }, "Neste momento serias avisado de:"), alertas.filter(a => a.sev === "alta").map((a, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      fontSize: 12.5,
+      color: C.ink,
+      lineHeight: 1.5,
+      marginBottom: 4
+    }
+  }, "\xB7 ", a.t))));
 }
 
 /* ---------------- Ecrãs de autenticação + Root ---------------- */
