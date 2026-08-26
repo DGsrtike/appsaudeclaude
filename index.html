@@ -4286,9 +4286,11 @@ function Diario({
     days: days,
     saveDays: saveDays,
     flash: flash
-  }), /*#__PURE__*/React.createElement(UmaLinha, {
+  }), /*#__PURE__*/React.createElement(Habitos, {
     days: days,
     saveDays: saveDays,
+    cfg: cfg,
+    saveCfg: saveCfg,
     flash: flash
   }), /*#__PURE__*/React.createElement(OrcamentoDia, {
     days: days,
@@ -4487,10 +4489,17 @@ function Treino(props) {
       id: "carga",
       label: "Carga"
     }, {
+      id: "testes",
+      label: "Testes"
+    }, {
       id: "planear",
       label: "Planear"
     }]
-  }), sub === "forca" && /*#__PURE__*/React.createElement(Forca, props), sub === "carga" && /*#__PURE__*/React.createElement(Carga, props), sub === "planear" && /*#__PURE__*/React.createElement(Planear, props));
+  }), sub === "forca" && /*#__PURE__*/React.createElement(Forca, props), sub === "carga" && /*#__PURE__*/React.createElement(Carga, props), sub === "testes" && /*#__PURE__*/React.createElement(TestesFisicos, {
+    cfg: props.cfg,
+    saveCfg: props.saveCfg,
+    flash: props.flash
+  }), sub === "planear" && /*#__PURE__*/React.createElement(Planear, props));
 }
 function Forca({
   strength,
@@ -4794,10 +4803,11 @@ function Forca({
     })))));
   }));
 }
-function Carga({
-  days,
-  cfg
-}) {
+function Carga(props) {
+  const {
+    days,
+    cfg
+  } = props;
   const m = useMemo(() => metricasCarga(days), [days]);
   const banda = bandaAcwr(m.acwr);
   const dados = m.serie28.slice(-21).map(x => ({
@@ -4876,7 +4886,7 @@ function Carga({
     data: dados,
     labels: true,
     h: 90
-  }))), /*#__PURE__*/React.createElement(Card, {
+  }))), /*#__PURE__*/React.createElement(PedidoTreinador, props), /*#__PURE__*/React.createElement(Card, {
     style: {
       marginTop: 16,
       padding: 16
@@ -4931,6 +4941,9 @@ function Corpo(props) {
       id: "comida",
       label: "Refeições"
     }, {
+      id: "pele",
+      label: "Pele"
+    }, {
       id: "dor",
       label: "Dor"
     }, {
@@ -4940,7 +4953,7 @@ function Corpo(props) {
       id: "energia",
       label: "Energia"
     }]
-  }), sub === "fisico" && /*#__PURE__*/React.createElement(Fisico, props), sub === "agua" && /*#__PURE__*/React.createElement(Agua, props), sub === "comida" && /*#__PURE__*/React.createElement(Refeicoes, props), sub === "dor" && /*#__PURE__*/React.createElement(MapaDor, props), sub === "hidra" && /*#__PURE__*/React.createElement(Hidratacao, props), sub === "energia" && /*#__PURE__*/React.createElement(EnergiaDisp, props));
+  }), sub === "fisico" && /*#__PURE__*/React.createElement(Fisico, props), sub === "agua" && /*#__PURE__*/React.createElement(Agua, props), sub === "comida" && /*#__PURE__*/React.createElement(Refeicoes, props), sub === "pele" && /*#__PURE__*/React.createElement(Pele, props), sub === "dor" && /*#__PURE__*/React.createElement(MapaDor, props), sub === "hidra" && /*#__PURE__*/React.createElement(Hidratacao, props), sub === "energia" && /*#__PURE__*/React.createElement(EnergiaDisp, props));
 }
 function Fisico({
   days,
@@ -5629,7 +5642,9 @@ function Protocolo({
       marginTop: 12,
       lineHeight: 1.5
     }
-  }, "Lembretes fixos: tomar sempre a seguir a uma refei\xE7\xE3o com gordura (absorve muito melhor), protetor solar di\xE1rio, e ", /*#__PURE__*/React.createElement("b", null, "nunca"), " juntar suplementos com vitamina A ou retinol ao protocolo.")), /*#__PURE__*/React.createElement(StockMedicacao, {
+  }, "Lembretes fixos: tomar sempre a seguir a uma refei\xE7\xE3o com gordura (absorve muito melhor), protetor solar di\xE1rio, e ", /*#__PURE__*/React.createElement("b", null, "nunca"), " juntar suplementos com vitamina A ou retinol ao protocolo.")), /*#__PURE__*/React.createElement(VerificadorRotulo, {
+    flash: flash
+  }), /*#__PURE__*/React.createElement(StockMedicacao, {
     cfg: cfg,
     saveCfg: saveCfg,
     proto: proto,
@@ -6380,7 +6395,10 @@ function PosOp({
       fontSize: 13,
       color: C.muted
     }
-  }, "Define a data da cirurgia no separador \u201CDados\u201D.")), ordenados.length > 0 && /*#__PURE__*/React.createElement(Card, {
+  }, "Define a data da cirurgia no separador \u201CDados\u201D.")), /*#__PURE__*/React.createElement(RetornoGradual, {
+    days: days,
+    cfg: cfg
+  }), ordenados.length > 0 && /*#__PURE__*/React.createElement(Card, {
     style: {
       marginTop: 16
     }
@@ -6815,10 +6833,12 @@ function Insights(D) {
   const {
     days,
     cfg,
+    saveCfg,
     proto,
     analyses,
     strength,
-    alertas
+    alertas,
+    flash
   } = D;
   const [sub, setSub] = useState("alertas");
   const cors = useMemo(() => {
@@ -6871,13 +6891,11 @@ function Insights(D) {
       id: "conquistas",
       label: "Conquistas"
     }]
-  }), sub === "avisos" && /*#__PURE__*/React.createElement(Avisos, D), sub === "calendario" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Calendario, {
+  }), sub === "avisos" && /*#__PURE__*/React.createElement(Avisos, D), sub === "calendario" && /*#__PURE__*/React.createElement(Calendario, {
     days: days,
     proto: proto,
     cfg: cfg
-  }), /*#__PURE__*/React.createElement(AnoEmQuadrados, {
-    days: days
-  })), sub === "percurso" && /*#__PURE__*/React.createElement(Percurso, D), sub === "foco" && /*#__PURE__*/React.createElement(Foco, D), sub === "alertas" && /*#__PURE__*/React.createElement(CardImune, {
+  }), sub === "percurso" && /*#__PURE__*/React.createElement(Percurso, D), sub === "foco" && /*#__PURE__*/React.createElement(Foco, D), sub === "alertas" && /*#__PURE__*/React.createElement(CardImune, {
     days: days,
     cfg: cfg
   }), sub === "alertas" && (alertas.length === 0 ? /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
@@ -6985,7 +7003,17 @@ function Insights(D) {
       padding: l.startsWith("→") ? "12px 14px" : 0,
       borderRadius: 12
     }
-  }, l))), sub === "padroes" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(CardFatores, {
+  }, l))), sub === "padroes" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(CardMelhoresDias, {
+    days: days,
+    cfg: cfg
+  }), /*#__PURE__*/React.createElement(CardSimulador, {
+    days: days,
+    cfg: cfg
+  }), /*#__PURE__*/React.createElement(Cronotipo, {
+    cfg: cfg,
+    saveCfg: saveCfg,
+    flash: flash
+  }), /*#__PURE__*/React.createElement(CardFatores, {
     days: days
   }), /*#__PURE__*/React.createElement(CardPadraoSemanal, {
     days: days
@@ -7640,6 +7668,30 @@ async function generatePdf(D) {
     });
   }
 
+  /* Pele e testes */
+  {
+    const hp = Object.keys(days).filter(k => days[k].pele && days[k].pele.grau != null).sort().reverse();
+    const rows = [];
+    if (hp.length) {
+      const u = days[hp[0]].pele;
+      rows.push(["Pele (mais recente)", `grau ${u.grau} — ${(ESCALA_PELE[u.grau] || {}).t} · ${prettyDate(hp[0])}`]);
+      if (hp.length > 1) rows.push(["Anterior", `grau ${days[hp[1]].pele.grau} · ${prettyDate(hp[1])}`]);
+      if (u.efeitos && u.efeitos.length) rows.push(["Efeitos assinalados", u.efeitos.join(", ")]);
+    }
+    const T = cfg.testes || [];
+    if (T.length) {
+      const porTipo = {};
+      T.forEach(t => {
+        if (!porTipo[t.tipo] || porTipo[t.tipo].date < t.date) porTipo[t.tipo] = t;
+      });
+      Object.values(porTipo).forEach(t => {
+        const b = BATERIA.find(x => x.id === t.tipo);
+        rows.push([b ? b.n : t.tipo, `${t.v} ${b ? b.un : ""} · ${prettyDate(t.date)}`]);
+      });
+    }
+    if (rows.length) table("Pele e testes físicos", rows);
+  }
+
   /* Refeições e ombro */
   {
     const comDados = keys.filter(k => days[k].refeicoes);
@@ -7770,7 +7822,6 @@ async function generatePdf(D) {
     if (days[k].agua != null) rows.push(["Água", `${days[k].agua} copos`]);
     if (e.dor) rows.push(["Dor/lesão", e.dor]);
     if (e.nota) rows.push(["Nota", e.nota]);
-    if (days[k].linha) rows.push(["Frase do dia", days[k].linha]);
     if (b.peso != null) rows.push(["Peso", `${b.peso} kg${b.gordura ? ` · ${b.gordura}%` : ""}`]);
     const hd = days[k].hydration ? calcHidratacao(days[k].hydration) : null;
     if (hd) rows.push(["Hidratação", `−${hd.pct}% do peso · ${hd.taxa} L/h`]);
@@ -8839,7 +8890,7 @@ function ModoConsulta(D) {
       flash("Não consegui copiar");
     }
   };
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(DesdeUltimaConsulta, D), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
     icon: /*#__PURE__*/React.createElement(Stethoscope, {
       size: 18,
       color: C.teal
@@ -9816,7 +9867,7 @@ function ModoCama({
       lineHeight: 1.5,
       textAlign: "center"
     }
-  }, "Segue o c\xEDrculo. Quatro a seis ciclos costumam chegar para baixar a pulsa\xE7\xE3o antes de dormir.")), /*#__PURE__*/React.createElement(CardCafeina, {
+  }, "Segue o c\xEDrculo. Quatro a seis ciclos costumam chegar para baixar a pulsa\xE7\xE3o antes de dormir.")), /*#__PURE__*/React.createElement(SomParaDormir, null), /*#__PURE__*/React.createElement(CardCafeina, {
     days: days,
     cfg: cfg
   }));
@@ -12345,6 +12396,7 @@ const PRESETS_TREINO = [{
 }];
 function Planear({
   days,
+  saveDays,
   cfg,
   saveCfg,
   flash,
@@ -12468,6 +12520,10 @@ function Planear({
     saveAgenda: saveAgenda,
     days: days,
     cfg: cfg,
+    flash: flash
+  }), /*#__PURE__*/React.createElement(Pomodoro, {
+    days: days,
+    saveDays: saveDays,
     flash: flash
   }), /*#__PURE__*/React.createElement(SacoTreino, {
     days: days,
@@ -14968,191 +15024,6 @@ function OrcamentoDia({
   })));
 }
 
-/* --------------------- Uma linha por dia ------------------------- */
-function UmaLinha({
-  days,
-  saveDays,
-  flash
-}) {
-  const k = dayKey();
-  const hoje = days[k] || {};
-  const [t, setT] = useState(hoje.linha || "");
-  useEffect(() => {
-    setT(hoje.linha || "");
-  }, [hoje.linha]); // eslint-disable-line
-  const guardar = () => {
-    saveDays({
-      ...days,
-      [k]: {
-        ...hoje,
-        linha: t.trim()
-      }
-    });
-    vibrar(10);
-    flash("Guardada");
-  };
-  const antigas = [365, 180, 30].map(n => ({
-    n,
-    k: daysAgoKey(n)
-  })).filter(x => days[x.k] && days[x.k].linha);
-  return /*#__PURE__*/React.createElement(Card, {
-    style: {
-      marginTop: 18
-    }
-  }, /*#__PURE__*/React.createElement(SectionTitle, {
-    icon: /*#__PURE__*/React.createElement(BookOpen, {
-      size: 18,
-      color: C.teal
-    }),
-    hint: "Uma frase por dia, n\xE3o mais. Ao fim de um ano tens uma coisa que n\xE3o se compra: mem\xF3ria a s\xE9rio do que te aconteceu."
-  }, "A frase de hoje"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      alignItems: "flex-start"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      minWidth: 0
-    }
-  }, /*#__PURE__*/React.createElement(Area, {
-    value: t,
-    onChange: setT,
-    rows: 2,
-    placeholder: "Uma linha. O que ficou deste dia."
-  })), /*#__PURE__*/React.createElement(BotaoVoz, {
-    onTexto: x => setT((t + " " + x).trim())
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 12
-    }
-  }, /*#__PURE__*/React.createElement(PrimaryBtn, {
-    onClick: guardar,
-    disabled: !t.trim()
-  }, /*#__PURE__*/React.createElement(Check, {
-    size: 16
-  }), " Guardar a frase")), antigas.map(a => /*#__PURE__*/React.createElement("div", {
-    key: a.n,
-    style: {
-      marginTop: 14,
-      background: C.input,
-      borderRadius: 12,
-      padding: "12px 14px"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 11,
-      color: C.muted,
-      fontWeight: 700,
-      textTransform: "uppercase",
-      letterSpacing: 0.5,
-      marginBottom: 5
-    }
-  }, a.n === 365 ? "Há um ano" : a.n === 180 ? "Há seis meses" : "Há um mês", " \xB7 ", prettyDate(a.k)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      color: C.ink,
-      fontFamily: SERIF,
-      lineHeight: 1.5
-    }
-  }, days[a.k].linha))));
-}
-function AnoEmQuadrados({
-  days
-}) {
-  const [sel, setSel] = useState(null);
-  const hoje = new Date();
-  const ano = hoje.getFullYear();
-  const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-  const baseHR = avg(Object.keys(days).map(k => days[k].morning ? days[k].morning.fcRepouso : null));
-  const cor = k => {
-    const d = days[k];
-    if (!d) return C.track;
-    if (d.morning && d.morning.humor != null) return d.morning.humor >= 4 ? C.good : d.morning.humor >= 3 ? C.teal : C.amber;
-    const rs = readinessScore(d.morning, baseHR);
-    if (rs != null) return readinessBand(rs).c;
-    return C.line;
-  };
-  return /*#__PURE__*/React.createElement(Card, {
-    style: {
-      marginTop: 16
-    }
-  }, /*#__PURE__*/React.createElement(SectionTitle, {
-    icon: /*#__PURE__*/React.createElement(Calendar, {
-      size: 18,
-      color: C.teal
-    }),
-    hint: "Cada quadrado \xE9 um dia, com a cor do humor com que acordaste. Um ano inteiro num ecr\xE3."
-  }, "O teu ", ano), meses.map((m, mi) => {
-    const n = new Date(ano, mi + 1, 0).getDate();
-    return /*#__PURE__*/React.createElement("div", {
-      key: m,
-      style: {
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        marginBottom: 4
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 9.5,
-        color: C.muted,
-        width: 22,
-        flexShrink: 0
-      }
-    }, m), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        gap: 2,
-        flex: 1,
-        flexWrap: "nowrap"
-      }
-    }, Array.from({
-      length: n
-    }).map((_, di) => {
-      const k = `${ano}-${String(mi + 1).padStart(2, "0")}-${String(di + 1).padStart(2, "0")}`;
-      return /*#__PURE__*/React.createElement("button", {
-        key: k,
-        onClick: () => setSel(days[k] ? k : null),
-        style: {
-          flex: 1,
-          height: 11,
-          minWidth: 0,
-          borderRadius: 2,
-          border: "none",
-          padding: 0,
-          cursor: days[k] ? "pointer" : "default",
-          background: cor(k),
-          opacity: k === sel ? 1 : 0.85,
-          outline: k === sel ? `2px solid ${C.heading}` : "none"
-        }
-      });
-    })));
-  }), sel && /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 14,
-      background: C.input,
-      borderRadius: 12,
-      padding: "12px 14px"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 12,
-      fontWeight: 700,
-      color: C.heading,
-      marginBottom: 5
-    }
-  }, weekdayShort(sel), " \xB7 ", prettyDate(sel)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      color: C.ink,
-      lineHeight: 1.5,
-      fontFamily: days[sel].linha ? SERIF : FONT
-    }
-  }, days[sel].linha || "Sem frase escrita neste dia.")));
-}
-
 /* ------------------------ Cafeína e sono ------------------------- */
 const FONTES_CAFEINA = [{
   n: "Café expresso",
@@ -15703,6 +15574,1864 @@ function NoiteMa({
       lineHeight: 1.75
     }
   }, /*#__PURE__*/React.createElement("li", null, "Sesta de 20 minutos, no m\xE1ximo, e antes das 16h \u2014 mais do que isso estraga a noite seguinte."), /*#__PURE__*/React.createElement("li", null, "Luz natural logo de manh\xE3: dez minutos na rua valem mais do que um caf\xE9."), /*#__PURE__*/React.createElement("li", null, "Sem cafe\xEDna depois das ", limiteCafeina || "16:00", "."), /*#__PURE__*/React.createElement("li", null, "No treino, mant\xE9m o volume e corta a intensidade. \xC9 com pouco sono que se d\xE3o os disparates."), /*#__PURE__*/React.createElement("li", null, "Recupera esta noite, n\xE3o ao fim de semana: deitar 45 minutos mais cedo hoje vale mais do que dormir at\xE9 ao meio-dia no s\xE1bado.")));
+}
+
+/* ================================================================ */
+/*  v10 — rótulos, pomodoro, ruído, hábitos, delta consulta, retorno */
+/* ================================================================ */
+
+/* --------------------- Verificador de rótulos -------------------- */
+const REGRAS_ROTULO = [{
+  sev: "alta",
+  termos: ["retinol", "retinil", "retinyl", "retinoico", "retinoic", "tretinoina", "tretinoína", "isotretinoina", "adapaleno", "palmitato de retinilo"],
+  t: "Retinoides / vitamina A",
+  d: "Soma-se à isotretinoína que já tomas. Excesso de vitamina A é tóxico para o fígado e para os ossos."
+}, {
+  sev: "alta",
+  termos: ["vitamina a", "vit. a", "vit a ", "beta-caroteno", "betacaroteno", "beta caroteno", "oleo de figado", "óleo de fígado", "cod liver"],
+  t: "Vitamina A ou precursores",
+  d: "Mesmo em multivitamínicos «normais». Com isotretinoína, não se junta."
+}, {
+  sev: "alta",
+  termos: ["doxiciclina", "minociclina", "tetraciclina", "limeciclina"],
+  t: "Antibióticos das tetraciclinas",
+  d: "Não se associam à isotretinoína — risco de aumento da pressão dentro do crânio."
+}, {
+  sev: "media",
+  termos: ["hipericao", "hipericão", "erva de sao joao", "erva de são joão", "st. john", "hypericum"],
+  t: "Hipericão (erva-de-são-joão)",
+  d: "Interfere com o metabolismo de muitos medicamentos."
+}, {
+  sev: "media",
+  termos: ["efedrina", "sibutramina", "dmaa", "yohimbina", "ioimbina", "higenamina"],
+  t: "Estimulante de risco",
+  d: "Substâncias comuns em «queima-gordura» — perigosas e muitas delas proibidas no desporto."
+}, {
+  sev: "media",
+  termos: ["dhea", "androstenediona", "prohormone", "pró-hormona", "sarm", "ostarina", "testosterona"],
+  t: "Hormonas ou pró-hormonas",
+  d: "Fora de questão na tua idade e dopantes em competição."
+}, {
+  sev: "info",
+  termos: ["cafeina", "cafeína", "caffeine", "guarana", "guaraná"],
+  t: "Cafeína",
+  d: "Conta para o teu total do dia — vê a calculadora no Modo cama."
+}, {
+  sev: "info",
+  termos: ["calcio", "cálcio", "carbonato de calcio"],
+  t: "Cálcio",
+  d: "Compete com o ferro. Separa umas horas do Sanguenol / Folifer."
+}, {
+  sev: "info",
+  termos: ["zinco"],
+  t: "Zinco",
+  d: "Em dose alta e prolongada compete com o cobre e com o ferro."
+}];
+function analisarRotulo(txt) {
+  const n = normNome(txt);
+  const achados = [];
+  REGRAS_ROTULO.forEach(r => {
+    const hit = r.termos.find(t => n.indexOf(normNome(t)) >= 0);
+    if (hit) achados.push({
+      ...r,
+      hit
+    });
+  });
+  const ordem = {
+    alta: 0,
+    media: 1,
+    info: 2
+  };
+  return achados.sort((a, b) => ordem[a.sev] - ordem[b.sev]);
+}
+function VerificadorRotulo({
+  flash
+}) {
+  const [txt, setTxt] = useState("");
+  const [res, setRes] = useState(null);
+  const ver = () => {
+    const r = analisarRotulo(txt);
+    setRes(r);
+    vibrar(r.some(x => x.sev === "alta") ? 60 : 12);
+  };
+  const cor = {
+    alta: C.warn,
+    media: C.amber,
+    info: C.teal
+  };
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Beaker, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Algu\xE9m te oferece um suplemento no gin\xE1sio, ou v\xEAs um no supermercado. Copia ou escreve a lista de ingredientes aqui antes de tomares."
+  }, "Isto posso tomar?"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      alignItems: "flex-start",
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement(Area, {
+    value: txt,
+    onChange: setTxt,
+    rows: 3,
+    placeholder: "Cola aqui os ingredientes do r\xF3tulo\u2026"
+  })), /*#__PURE__*/React.createElement(BotaoVoz, {
+    onTexto: t => setTxt((txt + " " + t).trim())
+  })), /*#__PURE__*/React.createElement(PrimaryBtn, {
+    onClick: ver,
+    disabled: !txt.trim()
+  }, /*#__PURE__*/React.createElement(Check, {
+    size: 16
+  }), " Verificar"), res && res.length === 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.goodSoft,
+      borderRadius: 12,
+      padding: 14,
+      marginTop: 14,
+      fontSize: 12.5,
+      color: C.good,
+      lineHeight: 1.55
+    }
+  }, "N\xE3o encontrei nada da minha lista de sinalizados. Aten\xE7\xE3o: isto procura palavras conhecidas, n\xE3o substitui ler o r\xF3tulo nem perguntar. Antes de juntares seja o que for ao protocolo, mostra ao Prof. Milheiro."), res && res.length > 0 && res.map((r, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      padding: "12px 0",
+      borderTop: `1px solid ${C.line}`
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 5
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      width: 8,
+      height: 8,
+      borderRadius: 5,
+      background: cor[r.sev],
+      flexShrink: 0
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13.5,
+      fontWeight: 700,
+      color: cor[r.sev]
+    }
+  }, r.t), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11,
+      color: C.muted,
+      marginLeft: "auto"
+    }
+  }, "\xAB", r.hit, "\xBB")), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12.5,
+      color: C.ink,
+      margin: 0,
+      lineHeight: 1.55
+    }
+  }, r.d))), res && res.some(x => x.sev === "alta") && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.amberSoft,
+      borderRadius: 12,
+      padding: 14,
+      marginTop: 14,
+      fontSize: 13,
+      color: C.warn,
+      lineHeight: 1.6,
+      fontWeight: 600
+    }
+  }, "N\xE3o tomes sem falares primeiro com o Dr. S\xE9rgio Alves ou com o Prof. Milheiro."));
+}
+
+/* ------------------------- Blocos de estudo ---------------------- */
+function Pomodoro({
+  days,
+  saveDays,
+  flash
+}) {
+  const [fase, setFase] = useState("parado");
+  const [resta, setResta] = useState(25 * 60);
+  const [blocos, setBlocos] = useState(0);
+  const k = dayKey();
+  const hoje = days[k] || {};
+  useEffect(() => {
+    if (fase === "parado" || fase === "pausa-manual") return;
+    const t = setInterval(() => {
+      setResta(r => {
+        if (r > 1) return r - 1;
+        if (fase === "foco") {
+          const ev = {
+            ...(hoje.evening || {})
+          };
+          ev.estudo = (ev.estudo || 0) + 25;
+          saveDays({
+            ...days,
+            [k]: {
+              ...hoje,
+              evening: {
+                ...ev,
+                at: new Date().toISOString()
+              }
+            }
+          });
+          setBlocos(b => b + 1);
+          vibrar(80);
+          notificar("Bloco terminado", "25 minutos feitos. Cinco minutos de pausa — levanta-te.", "pomo" + Date.now());
+          setFase("descanso");
+          return 5 * 60;
+        }
+        vibrar(40);
+        notificar("Pausa terminada", "De volta ao trabalho.", "pomo" + Date.now());
+        setFase("foco");
+        return 25 * 60;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [fase, days]); // eslint-disable-line
+  const mm = `${String(Math.floor(resta / 60)).padStart(2, "0")}:${String(resta % 60).padStart(2, "0")}`;
+  const cor = fase === "descanso" ? C.good : C.teal;
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Timer, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Vinte e cinco minutos a s\xE9rio valem mais do que duas horas com o telem\xF3vel ao lado. Cada bloco completo soma-se sozinho ao estudo registado do dia."
+  }, "Blocos de estudo"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      padding: "8px 0 16px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 46,
+      fontWeight: 700,
+      color: fase === "parado" ? C.muted : cor,
+      fontVariantNumeric: "tabular-nums",
+      letterSpacing: -1
+    }
+  }, mm), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12.5,
+      color: C.muted,
+      marginTop: 4
+    }
+  }, fase === "parado" ? "pronto para começar" : fase === "foco" ? "a trabalhar" : "pausa", " \xB7 ", blocos, " bloco(s) hoje")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement(PrimaryBtn, {
+    onClick: () => {
+      if (fase === "parado") {
+        setFase("foco");
+        setResta(25 * 60);
+        vibrar(20);
+      } else {
+        setFase("parado");
+        setResta(25 * 60);
+      }
+    }
+  }, fase === "parado" ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Timer, {
+    size: 16
+  }), " Come\xE7ar 25 min") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(X, {
+    size: 16
+  }), " Parar")))), hoje.evening && hoje.evening.estudo != null && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12,
+      color: C.muted,
+      marginTop: 12,
+      textAlign: "center"
+    }
+  }, "Estudo registado hoje: ", hoje.evening.estudo, " min"));
+}
+
+/* ------------------------ Som para dormir ------------------------ */
+let _audioCtx = null,
+  _noiseNode = null,
+  _gainNode = null,
+  _timerAudio = null;
+function pararRuido() {
+  try {
+    if (_noiseNode) {
+      _noiseNode.stop();
+      _noiseNode.disconnect();
+    }
+  } catch (e) {}
+  _noiseNode = null;
+  if (_timerAudio) {
+    clearTimeout(_timerAudio);
+    _timerAudio = null;
+  }
+}
+function tocarRuido(tipo, minutos, volume) {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
+    _audioCtx = _audioCtx || new AC();
+    pararRuido();
+    const dur = 2,
+      sr = _audioCtx.sampleRate;
+    const buf = _audioCtx.createBuffer(1, sr * dur, sr);
+    const d = buf.getChannelData(0);
+    let b0 = 0,
+      b1 = 0,
+      b2 = 0;
+    for (let i = 0; i < d.length; i++) {
+      const w = Math.random() * 2 - 1;
+      if (tipo === "branco") d[i] = w * 0.6;else {
+        b0 = 0.99765 * b0 + w * 0.0990460;
+        b1 = 0.96300 * b1 + w * 0.2965164;
+        b2 = 0.57000 * b2 + w * 1.0526913;
+        d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.16;
+      }
+    }
+    const src = _audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const filtro = _audioCtx.createBiquadFilter();
+    filtro.type = "lowpass";
+    filtro.frequency.value = tipo === "chuva" ? 1200 : tipo === "mar" ? 600 : 8000;
+    _gainNode = _audioCtx.createGain();
+    _gainNode.gain.value = volume == null ? 0.35 : volume;
+    src.connect(filtro);
+    filtro.connect(_gainNode);
+    _gainNode.connect(_audioCtx.destination);
+    src.start();
+    _noiseNode = src;
+    if (minutos) _timerAudio = setTimeout(() => {
+      try {
+        _gainNode.gain.linearRampToValueAtTime(0, _audioCtx.currentTime + 20);
+      } catch (e) {}
+      setTimeout(pararRuido, 21000);
+    }, minutos * 60000);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+function SomParaDormir() {
+  const [ativo, setAtivo] = useState(null);
+  const [mins, setMins] = useState(30);
+  const suporta = typeof window !== "undefined" && !!(window.AudioContext || window.webkitAudioContext);
+  useEffect(() => () => pararRuido(), []);
+  if (!suporta) return null;
+  const tipos = [{
+    id: "rosa",
+    n: "Ruído rosa"
+  }, {
+    id: "chuva",
+    n: "Chuva"
+  }, {
+    id: "mar",
+    n: "Mar"
+  }, {
+    id: "branco",
+    n: "Ruído branco"
+  }];
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 22,
+      paddingTop: 18,
+      borderTop: `1px solid ${C.line}`
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: C.heading,
+      marginBottom: 10,
+      textAlign: "center"
+    }
+  }, "Som para adormecer"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 8,
+      justifyContent: "center",
+      marginBottom: 12
+    }
+  }, tipos.map(t => /*#__PURE__*/React.createElement("button", {
+    key: t.id,
+    onClick: () => {
+      if (ativo === t.id) {
+        pararRuido();
+        setAtivo(null);
+      } else {
+        tocarRuido(t.id, mins, 0.35);
+        setAtivo(t.id);
+      }
+    },
+    style: {
+      ...chip(ativo === t.id),
+      fontSize: 12
+    }
+  }, t.n))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      justifyContent: "center",
+      alignItems: "center",
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 12,
+      color: C.muted
+    }
+  }, "Desliga-se em"), [15, 30, 60].map(m => /*#__PURE__*/React.createElement("button", {
+    key: m,
+    onClick: () => {
+      setMins(m);
+      if (ativo) tocarRuido(ativo, m, 0.35);
+    },
+    style: {
+      ...chip(mins === m),
+      padding: "5px 11px",
+      fontSize: 12
+    }
+  }, m, " min"))), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11,
+      color: C.muted,
+      marginTop: 12,
+      lineHeight: 1.5,
+      textAlign: "center"
+    }
+  }, "Gerado no telem\xF3vel, sem internet e sem ficheiros. Baixa-se sozinho no fim do tempo."));
+}
+
+/* -------------------------- Hábitos ------------------------------ */
+const HABITOS_SUG = ["Protetor solar", "Alongar 5 min", "Sem refrigerantes", "Sem ecrãs na cama", "Ler 10 min", "Creme nos lábios", "Fruta ao pequeno-almoço"];
+function streakHabito(days, h) {
+  let s = 0;
+  for (let i = 0; i < 200; i++) {
+    const k = daysAgoKey(i);
+    const l = days[k] && days[k].habitos;
+    const ok = l && l.indexOf(h) >= 0;
+    if (!ok) {
+      if (i === 0) continue;
+      break;
+    }
+    s++;
+  }
+  return s;
+}
+function Habitos({
+  days,
+  saveDays,
+  cfg,
+  saveCfg,
+  flash
+}) {
+  const lista = cfg.habitos && cfg.habitos.length ? cfg.habitos : [];
+  const [novo, setNovo] = useState("");
+  const k = dayKey();
+  const hoje = days[k] || {};
+  const feitos = hoje.habitos || [];
+  const toggle = h => {
+    vibrar(10);
+    const cur = feitos.slice();
+    const i = cur.indexOf(h);
+    if (i >= 0) cur.splice(i, 1);else cur.push(h);
+    saveDays({
+      ...days,
+      [k]: {
+        ...hoje,
+        habitos: cur
+      }
+    });
+  };
+  const add = n => {
+    const x = (n || novo).trim();
+    if (!x || lista.indexOf(x) >= 0) return;
+    saveCfg({
+      ...cfg,
+      habitos: [...lista, x]
+    });
+    setNovo("");
+    flash("Hábito criado");
+  };
+  const del = h => saveCfg({
+    ...cfg,
+    habitos: lista.filter(x => x !== h)
+  });
+  const ultimos = [];
+  for (let i = 13; i >= 0; i--) ultimos.push(daysAgoKey(i));
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 18
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Flame, {
+      size: 18,
+      color: C.amber
+    }),
+    hint: "Coisas pequenas que s\xF3 contam se forem repetidas. Escolhe duas ou tr\xEAs, n\xE3o dez."
+  }, "H\xE1bitos"), lista.length === 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 13,
+      color: C.muted,
+      marginTop: 0,
+      lineHeight: 1.5
+    }
+  }, "Ainda n\xE3o tens h\xE1bitos. Toca num para come\xE7ar:"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 12
+    }
+  }, HABITOS_SUG.map(h => /*#__PURE__*/React.createElement("button", {
+    key: h,
+    onClick: () => add(h),
+    style: {
+      ...chip(false),
+      fontSize: 12
+    }
+  }, h)))), lista.map(h => {
+    const st = streakHabito(days, h);
+    return /*#__PURE__*/React.createElement("div", {
+      key: h,
+      style: {
+        padding: "6px 0",
+        borderTop: `1px solid ${C.line}`
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement(CheckRow, {
+      on: feitos.indexOf(h) >= 0,
+      onToggle: () => toggle(h),
+      title: h,
+      sub: st > 0 ? `${st} dia(s) seguidos` : "começa hoje",
+      right: st >= 7 ? /*#__PURE__*/React.createElement(Flame, {
+        size: 14,
+        color: C.amber
+      }) : null
+    })), /*#__PURE__*/React.createElement("button", {
+      onClick: () => del(h),
+      style: iconBtn()
+    }, /*#__PURE__*/React.createElement(X, {
+      size: 14
+    }))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 2,
+        paddingLeft: 36,
+        marginTop: -4,
+        marginBottom: 6
+      }
+    }, ultimos.map(d => {
+      const on = days[d] && days[d].habitos && days[d].habitos.indexOf(h) >= 0;
+      return /*#__PURE__*/React.createElement("span", {
+        key: d,
+        style: {
+          flex: 1,
+          height: 6,
+          borderRadius: 2,
+          background: on ? C.good : C.track
+        }
+      });
+    })));
+  }), lista.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginTop: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement(TextInput, {
+    value: novo,
+    onChange: setNovo,
+    placeholder: "Novo h\xE1bito"
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: () => add(),
+    style: {
+      ...ctrlBtn(),
+      width: 46,
+      borderColor: C.teal
+    }
+  }, /*#__PURE__*/React.createElement(Plus, {
+    size: 18,
+    color: C.teal
+  }))));
+}
+
+/* ---------------- O que mudou desde a última consulta ------------ */
+function DesdeUltimaConsulta(D) {
+  const {
+    days,
+    cfg,
+    agenda,
+    analyses,
+    proto
+  } = D;
+  const passadas = (agenda.consultas || []).filter(c => c.date < dayKey()).sort((a, b) => a.date < b.date ? 1 : -1);
+  if (!passadas.length) return null;
+  const c = passadas[0];
+  const dias = daysBetween(c.date, dayKey());
+  const janela = (ini, fim) => {
+    const ks = Object.keys(days).filter(k => k >= ini && k <= fim);
+    const baseHR = avg(Object.keys(days).map(x => days[x].morning ? days[x].morning.fcRepouso : null));
+    const M = ks.map(k => days[k].morning).filter(Boolean);
+    const pesos = ks.map(k => days[k].body ? days[k].body.peso : null).filter(x => x != null);
+    return {
+      prontidao: avg(M.map(m => readinessScore(m, baseHR))),
+      sono: avg(M.map(m => m.sono)),
+      peso: pesos.length ? pesos[pesos.length - 1] : null,
+      carga: avg(ks.map(k => cargaDoDia(days[k])).filter(x => x != null))
+    };
+  };
+  const antes = janela(addDaysKey(c.date, -dias), c.date);
+  const depois = janela(c.date, dayKey());
+  const novas = (analyses || []).filter(a => a.date > c.date);
+  const sint = {};
+  Object.keys(days).filter(k => k > c.date).forEach(k => {
+    const m = days[k].morning;
+    if (m && m.sintomas) m.sintomas.forEach(x => {
+      sint[x] = (sint[x] || 0) + 1;
+    });
+  });
+  const topo = Object.entries(sint).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const linha = (n, a, b, un, casas) => {
+    if (b == null) return null;
+    const d = a != null ? casas ? Math.round((b - a) * 10) / 10 : Math.round(b - a) : null;
+    return /*#__PURE__*/React.createElement("div", {
+      key: n,
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "10px 0",
+        borderTop: `1px solid ${C.line}`
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 13,
+        color: C.muted,
+        flex: 1
+      }
+    }, n), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 14,
+        fontWeight: 700,
+        color: C.heading
+      }
+    }, casas ? r1(b) : r0(b), un), d != null && d !== 0 && /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: C.muted,
+        width: 54,
+        textAlign: "right"
+      }
+    }, d > 0 ? "+" : "", d, un));
+  };
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginBottom: 16,
+      borderLeft: `4px solid ${C.teal}`
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(TrendingUp, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "A pergunta que abre qualquer consulta de seguimento \xE9 \xABent\xE3o, o que mudou desde a \xFAltima vez?\xBB. Aqui est\xE1 a resposta com n\xFAmeros."
+  }, "Desde ", c.quem, " \xB7 ", prettyDate(c.date)), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12.5,
+      color: C.muted,
+      marginTop: 0
+    }
+  }, "Passaram ", dias, " dias. Compara\xE7\xE3o com os ", dias, " dias anteriores \xE0 consulta:"), linha("Prontidão média", antes.prontidao, depois.prontidao, ""), linha("Sono por noite", antes.sono, depois.sono, " h", true), linha("Peso", antes.peso, depois.peso, " kg", true), linha("Carga média por dia", antes.carga, depois.carga, " u"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      paddingTop: 12,
+      borderTop: `1px solid ${C.line}`,
+      marginTop: 4
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12.5,
+      color: C.ink,
+      lineHeight: 1.6
+    }
+  }, novas.length ? `${novas.length} análise(s) nova(s) desde então. ` : "Sem análises novas desde então. ", topo.length ? `Sintomas mais registados: ${topo.map(([n, q]) => `${n} (${q})`).join(", ")}.` : "Nenhum sintoma registado no período.")));
+}
+
+/* ------------------ Retorno gradual após paragem ----------------- */
+const FASES_RETORNO = [{
+  n: "Fase 1 · parar",
+  d: "Repouso relativo. Nada de treino com esforço.",
+  crit: "Enquanto houver febre, dor forte ou mal-estar geral."
+}, {
+  n: "Fase 2 · movimento leve",
+  d: "Caminhar, mobilidade, técnica muito suave. Metade do tempo habitual, esforço baixo.",
+  crit: "24 h sem febre e a comer e beber normalmente."
+}, {
+  n: "Fase 3 · treino aeróbio",
+  d: "Sessão normal em volume, sem séries de qualidade nem máximos.",
+  crit: "Aguentar a fase anterior sem piorar no dia seguinte."
+}, {
+  n: "Fase 4 · intensidade",
+  d: "Séries de qualidade, partidas, cargas do ginásio.",
+  crit: "FC de repouso de volta ao normal e prontidão acima de 60."
+}, {
+  n: "Fase 5 · normal",
+  d: "Plano completo do treinador.",
+  crit: "Dois dias seguidos na fase 4 sem queixas."
+}];
+function ultimaParagem(days) {
+  const ks = Object.keys(days).filter(k => days[k].evening && ["Doente", "Lesionado"].indexOf(days[k].evening.estado) >= 0).sort();
+  if (!ks.length) return null;
+  const fim = ks[ks.length - 1];
+  if (daysBetween(fim, dayKey()) > 21) return null;
+  let ini = fim;
+  ks.slice().reverse().forEach(k => {
+    if (daysBetween(k, ini) <= 2) ini = k;
+  });
+  return {
+    ini,
+    fim,
+    estado: days[fim].evening.estado,
+    dias: daysBetween(ini, fim) + 1,
+    desde: daysBetween(fim, dayKey())
+  };
+}
+function RetornoGradual({
+  days,
+  cfg
+}) {
+  const p = ultimaParagem(days);
+  if (!p) return null;
+  const baseHR = avg(Object.keys(days).map(k => days[k].morning ? days[k].morning.fcRepouso : null));
+  const hojeM = days[dayKey()] && days[dayKey()].morning;
+  const rs = readinessScore(hojeM, baseHR);
+  const sugerida = p.desde === 0 ? 1 : p.desde === 1 ? 2 : p.desde <= 3 ? 3 : rs != null && rs >= 60 ? 4 : 3;
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 16,
+      borderLeft: `4px solid ${C.amber}`
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Shield, {
+      size: 18,
+      color: C.amber
+    }),
+    hint: "Voltar ao normal de um dia para o outro depois de estar parado \xE9 como se apanham as reca\xEDdas e as les\xF5es. Isto \xE9 uma refer\xEAncia geral \u2014 quem decide \xE9 o m\xE9dico e o treinador."
+  }, "Voltar ao treino"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12.5,
+      color: C.muted,
+      marginTop: 0,
+      lineHeight: 1.55
+    }
+  }, "Estiveste ", p.dias, " dia(s) marcado como \xAB", p.estado.toLowerCase(), "\xBB, o \xFAltimo a ", prettyDate(p.fim), p.desde > 0 ? ` — há ${p.desde} dias` : " — hoje", "."), FASES_RETORNO.map((f, i) => {
+    const atual = i + 1 === sugerida;
+    return /*#__PURE__*/React.createElement("div", {
+      key: f.n,
+      style: {
+        display: "flex",
+        gap: 12,
+        alignItems: "flex-start",
+        padding: "11px 0",
+        borderTop: `1px solid ${C.line}`,
+        opacity: i + 1 <= sugerida ? 1 : 0.55
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        width: 12,
+        height: 12,
+        borderRadius: 8,
+        marginTop: 4,
+        flexShrink: 0,
+        background: atual ? C.amber : i + 1 < sugerida ? C.good : C.track,
+        boxShadow: atual ? `0 0 0 4px ${C.amberSoft}` : "none"
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 13.5,
+        fontWeight: 700,
+        color: atual ? C.amber : C.heading
+      }
+    }, f.n, atual ? " · sugerida para hoje" : ""), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: 12,
+        color: C.ink,
+        margin: "3px 0 0",
+        lineHeight: 1.5
+      }
+    }, f.d), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: 11.5,
+        color: C.muted,
+        margin: "3px 0 0",
+        lineHeight: 1.45
+      }
+    }, "S\xF3 avan\xE7a quando: ", f.crit)));
+  }), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11.5,
+      color: C.muted,
+      marginTop: 12,
+      lineHeight: 1.55
+    }
+  }, "Regra simples: cada fase dura pelo menos um dia e s\xF3 se avan\xE7a se o dia seguinte correr bem. Se piorar, recua uma fase. Febre, falta de ar ou dor no peito \u2014 parar e falar com um m\xE9dico."));
+}
+
+/* ================================================================ */
+/*  v11 — melhores dias, simulador, testes, cronotipo, pele, pedido  */
+/* ================================================================ */
+
+/* ---------------- A anatomia dos teus melhores dias -------------- */
+function anatomiaDias(days, cfg) {
+  const baseHR = avg(Object.keys(days).map(k => days[k].morning ? days[k].morning.fcRepouso : null));
+  const ks = Object.keys(days).filter(k => days[k].morning).sort();
+  const pontuados = ks.map(k => ({
+    k,
+    r: readinessScore(days[k].morning, baseHR)
+  })).filter(x => x.r != null);
+  if (pontuados.length < 10) return null;
+  const ord = pontuados.slice().sort((a, b) => b.r - a.r);
+  const n = Math.max(4, Math.round(pontuados.length * 0.3));
+  const top = ord.slice(0, n).map(x => x.k),
+    fundo = ord.slice(-n).map(x => x.k);
+  const minutosDeitar = t => {
+    if (!t) return null;
+    const [h, m] = t.split(":").map(Number);
+    let v = h * 60 + m;
+    if (v < 720) v += 1440;
+    return v;
+  };
+  const vespera = k => days[addDaysKey(k, -1)] || {};
+  const medidas = [{
+    n: "Horas de sono",
+    f: k => days[k].morning.sono,
+    un: " h",
+    casas: 1,
+    maisEMelhor: true
+  }, {
+    n: "Hora de deitar",
+    f: k => minutosDeitar(days[k].morning.deitar),
+    un: "",
+    hora: true
+  }, {
+    n: "Qualidade do sono",
+    f: k => days[k].morning.qualidadeSono,
+    un: "/5",
+    casas: 1,
+    maisEMelhor: true
+  }, {
+    n: "Carga do dia anterior",
+    f: k => cargaDoDia(vespera(k)),
+    un: " u"
+  }, {
+    n: "Estudo na véspera",
+    f: k => vespera(k).evening ? vespera(k).evening.estudo : null,
+    un: " min"
+  }, {
+    n: "Refeições marcadas",
+    f: k => vespera(k).refeicoes ? vespera(k).refeicoes.length : null,
+    un: "",
+    casas: 1,
+    maisEMelhor: true
+  }, {
+    n: "Copos de água",
+    f: k => vespera(k).agua,
+    un: "",
+    casas: 1,
+    maisEMelhor: true
+  }, {
+    n: "Hábitos cumpridos",
+    f: k => vespera(k).habitos ? vespera(k).habitos.length : null,
+    un: "",
+    casas: 1,
+    maisEMelhor: true
+  }];
+  const res = [];
+  medidas.forEach(m => {
+    const a = avg(top.map(m.f)),
+      b = avg(fundo.map(m.f));
+    if (a == null || b == null) return;
+    const d = a - b;
+    const base = Math.abs(b) || 1;
+    if (Math.abs(d) / base < 0.06) return;
+    res.push({
+      n: m.n,
+      top: a,
+      fundo: b,
+      d,
+      un: m.un,
+      casas: m.casas,
+      hora: m.hora,
+      forca: Math.abs(d) / base
+    });
+  });
+  const fmtV = (v, m) => {
+    if (m.hora) {
+      const t = Math.round(v) % 1440;
+      return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(Math.round(t % 60)).padStart(2, "0")}`;
+    }
+    return `${m.casas ? r1(v) : r0(v)}${m.un}`;
+  };
+  return {
+    n,
+    res: res.sort((a, b) => b.forca - a.forca),
+    fmtV,
+    mediaTop: avg(ord.slice(0, n).map(x => x.r)),
+    mediaFundo: avg(ord.slice(-n).map(x => x.r))
+  };
+}
+function CardMelhoresDias({
+  days,
+  cfg
+}) {
+  const a = anatomiaDias(days, cfg);
+  if (!a || !a.res.length) return null;
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Sparkles, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "A app separou os teus melhores dias dos piores e foi ver o que os distingue. N\xE3o \xE9 teoria \u2014 s\xE3o os teus dias."
+  }, "A receita dos teus melhores dias"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10,
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement(Stat, {
+    label: `Melhores ${a.n} dias`,
+    value: `${r0(a.mediaTop)}/100`,
+    color: C.good
+  }), /*#__PURE__*/React.createElement(Stat, {
+    label: `Piores ${a.n} dias`,
+    value: `${r0(a.mediaFundo)}/100`,
+    color: C.amber
+  })), a.res.map(m => /*#__PURE__*/React.createElement("div", {
+    key: m.n,
+    style: {
+      padding: "11px 0",
+      borderTop: `1px solid ${C.line}`
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 4
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13.5,
+      fontWeight: 600,
+      color: C.ink,
+      flex: 1
+    }
+  }, m.n), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: C.good
+    }
+  }, a.fmtV(m.top, m)), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 11,
+      color: C.muted
+    }
+  }, "vs"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: C.amber
+    }
+  }, a.fmtV(m.fundo, m))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      height: 6,
+      borderRadius: 4,
+      overflow: "hidden",
+      background: C.track
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: `${clamp(m.forca * 100, 4, 100)}%`,
+      background: C.teal
+    }
+  })))), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11.5,
+      color: C.muted,
+      marginTop: 14,
+      lineHeight: 1.55
+    }
+  }, "\xC0 esquerda o valor m\xE9dio nos teus melhores dias, \xE0 direita nos piores. A barra mostra o tamanho da diferen\xE7a. Se um deles te saltar \xE0 vista, \xE9 o que vale a pena mudar primeiro."));
+}
+
+/* --------------------------- Simulador --------------------------- */
+function CardSimulador({
+  days,
+  cfg
+}) {
+  const [sono, setSono] = useState(null);
+  const [carga, setCarga] = useState(null);
+  const baseHR = avg(Object.keys(days).map(k => days[k].morning ? days[k].morning.fcRepouso : null));
+  const m = metricasCarga(days),
+    sn = metricasSono(days, cfg.sonoAlvo);
+  const ks = [];
+  for (let i = 20; i >= 0; i--) ks.push(daysAgoKey(i));
+  const M = ks.map(k => days[k] ? days[k].morning : null).filter(Boolean);
+  if (M.length < 5) return null;
+  const atual = avg(M.map(x => readinessScore(x, baseHR, {
+    acwr: m.acwr,
+    debtH: sn.debt7
+  })));
+  const sonoAtual = sn.media != null ? Math.round(sn.media * 2) / 2 : 7;
+  const cargaAtual = m.semana || 2000;
+  const S = sono == null ? sonoAtual : sono;
+  const K = carga == null ? cargaAtual : carga;
+  const acwrSim = m.cronica ? Math.round(K / 7 / m.cronica * 100) / 100 : m.acwr;
+  const debtSim = Math.max(0, 7 * ((cfg.sonoAlvo || 8) - S));
+  const modelo = {
+    sono: S,
+    qualidadeSono: clamp(Math.round((avg(M.map(x => x.qualidadeSono)) || 3) + (S - sonoAtual) * 0.4), 1, 5),
+    energia: clamp(Math.round((avg(M.map(x => x.energia)) || 3) + (S - sonoAtual) * 0.5 - (K - cargaAtual) / 1500), 1, 5),
+    humor: clamp(Math.round(avg(M.map(x => x.humor)) || 3), 1, 5),
+    dores: clamp(Math.round((avg(M.map(x => x.dores)) || 2) + (K - cargaAtual) / 1200), 1, 5),
+    fcRepouso: baseHR ? Math.round(baseHR + (K - cargaAtual) / 1500) : null
+  };
+  const sim = readinessScore(modelo, baseHR, {
+    acwr: acwrSim,
+    debtH: debtSim
+  });
+  const d = atual != null && sim != null ? Math.round(sim - atual) : null;
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Gauge, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Puxa os cursores e v\xEA o que aconteceria \xE0 tua prontid\xE3o m\xE9dia se as pr\xF3ximas semanas fossem assim. Baseia-se no teu hist\xF3rico, n\xE3o em tabelas gen\xE9ricas."
+  }, "E se\u2026"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 16,
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement(Ring, {
+    value: sim,
+    size: 92,
+    stroke: 10,
+    color: readinessBand(sim).c
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      fontWeight: 700,
+      color: readinessBand(sim).c
+    }
+  }, readinessBand(sim).t), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12.5,
+      color: C.muted,
+      margin: "4px 0 0",
+      lineHeight: 1.5
+    }
+  }, "M\xE9dia atual: ", r0(atual), "/100", d != null && d !== 0 ? ` · ${d > 0 ? "+" : ""}${d} pontos` : ""))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      fontSize: 13,
+      marginBottom: 4
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: C.ink,
+      fontWeight: 600
+    }
+  }, "Sono por noite"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: C.teal,
+      fontWeight: 700
+    }
+  }, S, " h")), /*#__PURE__*/React.createElement("input", {
+    type: "range",
+    min: 5,
+    max: 10,
+    step: 0.5,
+    value: S,
+    onChange: e => setSono(Number(e.target.value)),
+    style: {
+      width: "100%",
+      accentColor: C.teal
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 6
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      fontSize: 13,
+      marginBottom: 4
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: C.ink,
+      fontWeight: 600
+    }
+  }, "Carga semanal"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: C.teal,
+      fontWeight: 700
+    }
+  }, K, " u", acwrSim != null ? ` · ACWR ${acwrSim}` : "")), /*#__PURE__*/React.createElement("input", {
+    type: "range",
+    min: 0,
+    max: Math.max(5000, Math.round(cargaAtual * 1.8)),
+    step: 100,
+    value: K,
+    onChange: e => setCarga(Number(e.target.value)),
+    style: {
+      width: "100%",
+      accentColor: C.teal
+    }
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setSono(null);
+      setCarga(null);
+    },
+    style: {
+      border: "none",
+      background: "transparent",
+      color: C.teal,
+      fontSize: 12.5,
+      fontWeight: 700,
+      cursor: "pointer",
+      padding: "10px 0 0"
+    }
+  }, "Voltar ao que tens feito"), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11,
+      color: C.muted,
+      marginTop: 8,
+      lineHeight: 1.5
+    }
+  }, "\xC9 uma estimativa, n\xE3o uma promessa: usa as tuas m\xE9dias e a forma como o sono e a carga entram no c\xE1lculo da prontid\xE3o."));
+}
+
+/* ------------------------- Testes físicos ------------------------ */
+const BATERIA = [{
+  id: "flex",
+  n: "Flexões máximas",
+  un: "reps",
+  maisEMelhor: true,
+  x: "Sem parar, com forma correta"
+}, {
+  id: "prancha",
+  n: "Prancha",
+  un: "s",
+  maisEMelhor: true,
+  x: "Corpo alinhado, até falhar"
+}, {
+  id: "salto",
+  n: "Salto vertical",
+  un: "cm",
+  maisEMelhor: true,
+  x: "Parado, marca na parede"
+}, {
+  id: "flexib",
+  n: "Sentar e alcançar",
+  un: "cm",
+  maisEMelhor: true,
+  x: "Sentado, pernas esticadas"
+}, {
+  id: "burpees",
+  n: "Burpees em 1 min",
+  un: "reps",
+  maisEMelhor: true,
+  x: "Contar as completas"
+}, {
+  id: "corrida",
+  n: "Corrida de 12 min",
+  un: "m",
+  maisEMelhor: true,
+  x: "Teste de Cooper, se puderes"
+}];
+function TestesFisicos({
+  cfg,
+  saveCfg,
+  flash
+}) {
+  const lista = cfg.testes || [];
+  const [id, setId] = useState(BATERIA[0].id);
+  const [v, setV] = useState(null);
+  const teste = BATERIA.find(b => b.id === id);
+  const add = () => {
+    if (v == null) return;
+    saveCfg({
+      ...cfg,
+      testes: [{
+        id: uid8(),
+        tipo: id,
+        v,
+        date: dayKey()
+      }, ...lista]
+    });
+    setV(null);
+    vibrar(20);
+    flash("Registado");
+  };
+  const del = x => saveCfg({
+    ...cfg,
+    testes: lista.filter(t => t.id !== x)
+  });
+  const porTipo = {};
+  lista.forEach(t => {
+    (porTipo[t.tipo] = porTipo[t.tipo] || []).push(t);
+  });
+  const ultimoGeral = lista.length ? lista.slice().sort((a, b) => a.date < b.date ? 1 : -1)[0] : null;
+  const diasDesde = ultimoGeral ? daysBetween(ultimoGeral.date, dayKey()) : null;
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Target, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Uma bateria simples, repetida de 8 em 8 semanas, mostra progresso que a balan\xE7a e o espelho n\xE3o mostram. Faz sempre nas mesmas condi\xE7\xF5es."
+  }, "Testes f\xEDsicos"), diasDesde != null && diasDesde >= 56 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.tealSoft,
+      borderRadius: 12,
+      padding: "11px 13px",
+      marginBottom: 14,
+      fontSize: 12.5,
+      color: C.heading,
+      lineHeight: 1.5
+    }
+  }, "Passaram ", diasDesde, " dias desde o \xFAltimo teste. Boa altura para repetir a bateria."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 6,
+      marginBottom: 14
+    }
+  }, BATERIA.map(b => /*#__PURE__*/React.createElement("button", {
+    key: b.id,
+    onClick: () => setId(b.id),
+    style: {
+      ...chip(id === b.id),
+      padding: "6px 11px",
+      fontSize: 12
+    }
+  }, b.n))), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12,
+      color: C.muted,
+      margin: "0 0 12px"
+    }
+  }, teste.x), /*#__PURE__*/React.createElement(NumField, {
+    label: `Resultado (${teste.un})`,
+    value: v,
+    onChange: setV,
+    unit: teste.un,
+    step: "0.5"
+  }), /*#__PURE__*/React.createElement(PrimaryBtn, {
+    onClick: add,
+    disabled: v == null
+  }, /*#__PURE__*/React.createElement(Plus, {
+    size: 16
+  }), " Guardar resultado")), Object.entries(porTipo).map(([tipo, l]) => {
+    const b = BATERIA.find(x => x.id === tipo) || {
+      n: tipo,
+      un: ""
+    };
+    const ord = l.slice().sort((x, y) => x.date < y.date ? 1 : -1);
+    const melhor = Math.max.apply(null, l.map(x => x.v));
+    const primeiro = ord[ord.length - 1].v,
+      atual = ord[0].v;
+    const evol = primeiro ? Math.round((atual - primeiro) / primeiro * 100) : null;
+    return /*#__PURE__*/React.createElement(Card, {
+      key: tipo,
+      style: {
+        marginTop: 16,
+        padding: 16
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 8
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 14.5,
+        fontWeight: 700,
+        color: C.heading,
+        flex: 1
+      }
+    }, b.n), evol != null && evol !== 0 && /*#__PURE__*/React.createElement(Badge, {
+      color: evol > 0 ? C.good : C.amber,
+      soft: evol > 0 ? C.goodSoft : C.amberSoft
+    }, evol > 0 ? "+" : "", evol, "%"), /*#__PURE__*/React.createElement(Badge, {
+      color: C.amber,
+      soft: C.amberSoft
+    }, "recorde ", melhor, " ", b.un)), ord.length > 1 && /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "flex-end",
+        marginBottom: 4
+      }
+    }, /*#__PURE__*/React.createElement(Sparkline, {
+      values: ord.slice().reverse().map(x => x.v),
+      color: C.teal,
+      w: 150,
+      h: 30
+    })), ord.slice(0, 5).map(t => /*#__PURE__*/React.createElement(Row, {
+      key: t.id,
+      left: /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 12.5,
+          color: C.muted
+        }
+      }, prettyDate(t.date)),
+      right: /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 14.5,
+          fontWeight: 700,
+          color: C.ink
+        }
+      }, t.v, " ", b.un),
+      onDel: () => del(t.id)
+    })));
+  }));
+}
+
+/* --------------------------- Cronotipo --------------------------- */
+const PERGUNTAS_CRONO = [{
+  q: "Num dia sem escola nem treino, a que horas acordarias naturalmente?",
+  o: [["Antes das 7h", 1], ["7h–8h30", 2], ["8h30–10h", 3], ["Depois das 10h", 4]]
+}, {
+  q: "Na primeira meia hora depois de acordar, como te sentes?",
+  o: [["Bem desperto", 1], ["Razoável", 2], ["Lento", 3], ["Um farrapo", 4]]
+}, {
+  q: "A que horas te apetece deitar se não tiveres nada a mandar em ti?",
+  o: [["Antes das 22h", 1], ["22h–23h30", 2], ["23h30–1h", 3], ["Depois da 1h", 4]]
+}, {
+  q: "A que horas te sentes no teu melhor para esforço físico?",
+  o: [["De manhã cedo", 1], ["Meio da manhã", 2], ["Fim da tarde", 3], ["À noite", 4]]
+}, {
+  q: "Se tivesses um teste difícil, a que horas o querias fazer?",
+  o: [["8h", 1], ["11h", 2], ["15h", 3], ["19h", 4]]
+}];
+function Cronotipo({
+  cfg,
+  saveCfg,
+  flash
+}) {
+  const guardado = cfg.cronotipo || null;
+  const [resp, setResp] = useState(guardado ? guardado.resp : {});
+  const completo = Object.keys(resp).length === PERGUNTAS_CRONO.length;
+  const pontos = sum(Object.values(resp));
+  const tipo = pontos <= 8 ? "matutino" : pontos <= 13 ? "intermédio" : "vespertino";
+  const perfil = {
+    matutino: {
+      t: "Matutino",
+      d: "Rendes cedo e apagas cedo. Treinos e testes de manhã jogam a teu favor; à noite não insistas — o que fizeres depois das 22h rende pouco e rouba sono.",
+      treino: "manhã",
+      estudo: "logo depois da escola",
+      deitar: "22h–22h30"
+    },
+    "intermédio": {
+      t: "Intermédio",
+      d: "Adaptas-te às duas pontas. O que decide o teu dia não é o relógio interno — é a regularidade com que te deitas.",
+      treino: "indiferente",
+      estudo: "fim da tarde",
+      deitar: "22h30–23h"
+    },
+    vespertino: {
+      t: "Vespertino",
+      d: "O teu corpo só arranca a meio do dia. Treinos de manhã cedo custam-te mais do que aos outros, e não é preguiça. Compensa-se com luz natural logo ao acordar e com hora de deitar fixa.",
+      treino: "fim da tarde",
+      estudo: "noite cedo",
+      deitar: "23h–23h30"
+    }
+  }[tipo];
+  const guardar = () => {
+    saveCfg({
+      ...cfg,
+      cronotipo: {
+        resp,
+        tipo,
+        pontos,
+        em: dayKey()
+      }
+    });
+    flash("Guardado");
+  };
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Moon, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Cinco perguntas. Serve para perceberes se andas a lutar contra o teu pr\xF3prio rel\xF3gio \u2014 e para deixares de te culpar por isso."
+  }, "O teu rel\xF3gio interno"), PERGUNTAS_CRONO.map((p, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      padding: "12px 0",
+      borderTop: i ? `1px solid ${C.line}` : "none"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: C.ink,
+      marginBottom: 8,
+      lineHeight: 1.45
+    }
+  }, p.q), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 6
+    }
+  }, p.o.map(([t, v]) => /*#__PURE__*/React.createElement("button", {
+    key: t,
+    onClick: () => setResp({
+      ...resp,
+      [i]: v
+    }),
+    style: {
+      ...chip(resp[i] === v),
+      padding: "6px 11px",
+      fontSize: 12
+    }
+  }, t))))), completo && /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 16,
+      background: C.tealSoft,
+      borderRadius: 14,
+      padding: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15.5,
+      fontWeight: 700,
+      color: C.heading,
+      marginBottom: 6
+    }
+  }, "Perfil ", perfil.t.toLowerCase()), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 12.5,
+      color: C.ink,
+      margin: "0 0 12px",
+      lineHeight: 1.6
+    }
+  }, perfil.d), /*#__PURE__*/React.createElement(Grid, {
+    cols: 3
+  }, /*#__PURE__*/React.createElement(Stat, {
+    label: "Esfor\xE7o",
+    value: perfil.treino
+  }), /*#__PURE__*/React.createElement(Stat, {
+    label: "Estudo",
+    value: perfil.estudo
+  }), /*#__PURE__*/React.createElement(Stat, {
+    label: "Deitar",
+    value: perfil.deitar
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 14
+    }
+  }, /*#__PURE__*/React.createElement(GhostBtn, {
+    onClick: guardar
+  }, /*#__PURE__*/React.createElement(Check, {
+    size: 15
+  }), " Guardar perfil")), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11,
+      color: C.muted,
+      marginTop: 12,
+      lineHeight: 1.5
+    }
+  }, "Se o teu rel\xF3gio e o hor\xE1rio do clube estiverem em guerra, n\xE3o h\xE1 truque que resolva \u2014 mas h\xE1 conversa a ter, e agora tens com que a fundamentar.")));
+}
+
+/* ----------------------------- Pele ------------------------------ */
+const ESCALA_PELE = [{
+  v: 0,
+  t: "Limpa",
+  c: "#2FA98C"
+}, {
+  v: 1,
+  t: "Quase limpa",
+  c: "#7FC4A8"
+}, {
+  v: 2,
+  t: "Ligeira",
+  c: "#E0C05A"
+}, {
+  v: 3,
+  t: "Moderada",
+  c: "#E07A54"
+}, {
+  v: 4,
+  t: "Grave",
+  c: "#C6553A"
+}];
+function Pele({
+  days,
+  saveDays,
+  img,
+  cfg,
+  flash
+}) {
+  const k = dayKey();
+  const hoje = days[k] || {};
+  const p = hoje.pele || {};
+  const set = (campo, v) => saveDays({
+    ...days,
+    [k]: {
+      ...hoje,
+      pele: {
+        ...p,
+        [campo]: v,
+        at: new Date().toISOString()
+      }
+    }
+  });
+  const hist = Object.keys(days).filter(x => days[x].pele && days[x].pele.grau != null).sort().reverse();
+  const iso = isoInfo(cfg);
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(Camera, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Uma vez por m\xEAs, com a mesma luz e \xE0 mesma dist\xE2ncia. \xC9 isto que o Dr. S\xE9rgio Alves quer ver na consulta \u2014 a evolu\xE7\xE3o, n\xE3o a mem\xF3ria."
+  }, "Pele"), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 14,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 8
+    }
+  }, "Como est\xE1 hoje"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 6,
+      marginBottom: 14
+    }
+  }, ESCALA_PELE.map(e => /*#__PURE__*/React.createElement("button", {
+    key: e.v,
+    onClick: () => {
+      vibrar(8);
+      set("grau", e.v);
+    },
+    style: {
+      flex: 1,
+      padding: "10px 4px",
+      borderRadius: 12,
+      cursor: "pointer",
+      border: `1.5px solid ${p.grau === e.v ? e.c : C.line}`,
+      background: p.grau === e.v ? `${e.c}22` : C.surface,
+      color: p.grau === e.v ? e.c : C.muted,
+      fontSize: 11,
+      fontWeight: 700
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16
+    }
+  }, e.v), e.t))), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 14,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 8
+    }
+  }, "Onde"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement(Chips, {
+    options: ["Rosto", "Costas", "Peito", "Ombros"],
+    value: p.zonas,
+    onToggle: z => {
+      const cur = (p.zonas || []).slice();
+      const i = cur.indexOf(z);
+      if (i >= 0) cur.splice(i, 1);else cur.push(z);
+      set("zonas", cur);
+    }
+  })), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 14,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 8
+    }
+  }, "Efeitos do tratamento"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement(Chips, {
+    options: ["Lábios muito secos", "Pele a descamar", "Eczema", "Sangrar do nariz", "Olhos secos"],
+    value: p.efeitos,
+    onToggle: z => {
+      const cur = (p.efeitos || []).slice();
+      const i = cur.indexOf(z);
+      if (i >= 0) cur.splice(i, 1);else cur.push(z);
+      set("efeitos", cur);
+    }
+  })), /*#__PURE__*/React.createElement(Gallery, {
+    prefix: "img:pele",
+    dk: k,
+    img: img,
+    label: "Fotografias",
+    hint: "Mesma luz, mesma dist\xE2ncia, sem filtros. Entram no relat\xF3rio."
+  }), /*#__PURE__*/React.createElement("label", {
+    style: {
+      fontSize: 14,
+      color: C.ink,
+      fontWeight: 600,
+      display: "block",
+      marginBottom: 6
+    }
+  }, "Notas"), /*#__PURE__*/React.createElement(Area, {
+    value: p.notas,
+    onChange: v => set("notas", v),
+    placeholder: "O que mudou desde a \xFAltima vez"
+  })), hist.length > 0 && /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(TrendingUp, {
+      size: 18,
+      color: C.teal
+    })
+  }, "Evolu\xE7\xE3o"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 3,
+      alignItems: "flex-end",
+      height: 60,
+      marginBottom: 12
+    }
+  }, hist.slice(0, 14).reverse().map(d => {
+    const e = ESCALA_PELE[days[d].pele.grau] || ESCALA_PELE[0];
+    return /*#__PURE__*/React.createElement("div", {
+      key: d,
+      title: prettyDate(d),
+      style: {
+        flex: 1,
+        height: `${(4 - days[d].pele.grau) / 4 * 100 || 6}%`,
+        background: e.c,
+        borderRadius: 3,
+        minHeight: 6
+      }
+    });
+  })), hist.slice(0, 6).map(d => {
+    const e = ESCALA_PELE[days[d].pele.grau];
+    return /*#__PURE__*/React.createElement(Row, {
+      key: d,
+      left: /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 13,
+          color: C.muted
+        }
+      }, prettyDate(d)),
+      right: /*#__PURE__*/React.createElement(Badge, {
+        color: e.c,
+        soft: `${e.c}22`
+      }, e.v, " \xB7 ", e.t)
+    });
+  }), iso && /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11.5,
+      color: C.muted,
+      marginTop: 12,
+      lineHeight: 1.55
+    }
+  }, "\xC9 normal a pele piorar nas primeiras semanas de isotretino\xEDna antes de melhorar. O que interessa \xE9 a linha ao longo dos meses, n\xE3o a foto de ontem.")));
+}
+
+/* -------------------- Pedido fundamentado ------------------------ */
+function textoPedido(D) {
+  const {
+    days,
+    cfg,
+    proto,
+    analyses
+  } = D;
+  const carga = metricasCarga(days),
+    sono = metricasSono(days, cfg.sonoAlvo);
+  const baseHR = avg(Object.keys(days).map(k => days[k].morning ? days[k].morning.fcRepouso : null));
+  const ks = [];
+  for (let i = 13; i >= 0; i--) ks.push(daysAgoKey(i));
+  const rd = ks.map(k => readinessScore(days[k] && days[k].morning, baseHR, {
+    acwr: carga.acwr,
+    debtH: sono.debt7
+  })).filter(x => x != null);
+  const cont = {};
+  for (let i = 0; i < 30; i++) {
+    const k = daysAgoKey(i);
+    const z = days[k] && days[k].evening ? days[k].evening.zonasDor : null;
+    (z || []).forEach(id => {
+      cont[id] = (cont[id] || 0) + 1;
+    });
+  }
+  const dor = Object.entries(cont).sort((a, b) => b[1] - a[1])[0];
+  const po = posOpInfo(cfg);
+  const L = ["Olá, queria mostrar-lhe uns números que tenho andado a registar todos os dias nas últimas semanas.", ""];
+  if (rd.length) L.push(`· Prontidão média de ${r0(avg(rd))}/100, com mínimo de ${r0(Math.min.apply(null, rd))}.`);
+  if (sono.media != null) L.push(`· Média de ${r1(sono.media)} h de sono por noite, ${sono.curtas7} noites abaixo de 7,5 h na última semana.`);
+  if (carga.semana != null) L.push(`· Carga de treino de ${carga.semana} unidades (duração × esforço), ${carga.deltaSemana != null ? `${carga.deltaSemana > 0 ? "mais" : "menos"} ${Math.abs(carga.deltaSemana)}% do que na semana anterior` : "sem comparação disponível"}${carga.acwr != null ? `, com um rácio agudo:crónico de ${carga.acwr}` : ""}.`);
+  if (dor && dor[1] >= 4) L.push(`· Dor em «${(ZONAS.find(z => z.id === dor[0]) || {}).n}» em ${dor[1]} dos últimos 30 dias.`);
+  if (po && po.dias <= 60) L.push(`· Estou no dia ${po.dias} depois da cirurgia ao nariz e à garganta.`);
+  L.push("", "Não é para faltar nem para treinar menos por comodidade. Só queria perceber consigo se faz sentido ajustar alguma coisa nas próximas semanas, ou se estes números são normais nesta fase.", "", "Obrigado.");
+  return L.join("\n");
+}
+function PedidoTreinador(D) {
+  const {
+    flash
+  } = D;
+  const [aberto, setAberto] = useState(false);
+  const txt = textoPedido(D);
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(txt);
+      flash("Copiado");
+    } catch (e) {
+      flash("Não consegui copiar");
+    }
+  };
+  const partilhar = async () => {
+    try {
+      if (navigator.share) await navigator.share({
+        text: txt
+      });else copiar();
+    } catch (e) {}
+  };
+  return /*#__PURE__*/React.createElement(Card, {
+    style: {
+      marginTop: 16
+    }
+  }, /*#__PURE__*/React.createElement(SectionTitle, {
+    icon: /*#__PURE__*/React.createElement(MessageCircle, {
+      size: 18,
+      color: C.teal
+    }),
+    hint: "Dizer \xABestou cansado\xBB n\xE3o convence ningu\xE9m. Dizer \xABdormi 6,4 h de m\xE9dia e a carga subiu 30% numa semana\xBB \xE9 outra conversa."
+  }, "Falar com o treinador"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAberto(!aberto),
+    style: {
+      border: "none",
+      background: "transparent",
+      color: C.teal,
+      fontSize: 13.5,
+      fontWeight: 700,
+      cursor: "pointer",
+      padding: 0
+    }
+  }, aberto ? "Fechar" : "Ver a mensagem que a app escreve"), aberto && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.input,
+      borderRadius: 12,
+      padding: 14,
+      marginTop: 12,
+      fontSize: 12.5,
+      color: C.ink,
+      lineHeight: 1.6,
+      whiteSpace: "pre-wrap"
+    }
+  }, txt), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 10,
+      marginTop: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement(GhostBtn, {
+    onClick: copiar
+  }, /*#__PURE__*/React.createElement(Copy, {
+    size: 15
+  }), " Copiar")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement(GhostBtn, {
+    onClick: partilhar
+  }, /*#__PURE__*/React.createElement(Share2, {
+    size: 15
+  }), " Enviar"))), /*#__PURE__*/React.createElement("p", {
+    style: {
+      fontSize: 11,
+      color: C.muted,
+      marginTop: 12,
+      lineHeight: 1.5
+    }
+  }, "L\xEA antes de enviar e muda o que quiseres. O tom \xE9 de quem quer perceber, n\xE3o de quem se est\xE1 a queixar \u2014 e faz diferen\xE7a.")));
 }
 
 /* ---------------- Ecrãs de autenticação + Root ---------------- */
