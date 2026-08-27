@@ -1,5 +1,5 @@
 /* Service worker — «A minha recuperação» */
-const VERSAO = "1787830843590";
+const VERSAO = "1787852753773";
 const CACHE = "recup-" + VERSAO;
 const ESTADO = "recup-estado";
 
@@ -23,6 +23,21 @@ self.addEventListener("fetch", (e) => {
   const mesmaOrigem = url.origin === self.location.origin;
   const cdn = url.hostname === "cdn.jsdelivr.net" || url.hostname === "tessdata.projectnaptha.com";
   if (!mesmaOrigem && !cdn) return; /* Supabase e outros: sempre rede */
+
+  /* A página em si vai sempre primeiro à rede: assim uma versão nova aparece logo.
+     Só se não houver rede é que serve a cópia guardada. */
+  const ehPagina = req.mode === "navigate" || (req.headers.get("accept") || "").indexOf("text/html") >= 0;
+  if (mesmaOrigem && ehPagina) {
+    e.respondWith(
+      fetch(req).then((resp) => {
+        const copia = resp.clone();
+        caches.open(CACHE).then((c) => { try { c.put("./index.html", copia); } catch (er) {} });
+        return resp;
+      }).catch(() => caches.match("./index.html").then((h) => h || caches.match("./")))
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(req).then((hit) => {
       if (hit) return hit;
@@ -38,6 +53,7 @@ self.addEventListener("fetch", (e) => {
 /* A página envia-nos o estado atual para podermos avisar mesmo fechada */
 self.addEventListener("message", (e) => {
   const d = e.data || {};
+  if (d.tipo === "atualizar-ja") { self.skipWaiting(); return; }
   if (d.tipo === "estado") {
     caches.open(ESTADO).then((c) => c.put("estado.json", new Response(JSON.stringify(d.estado), { headers: { "Content-Type": "application/json" } })));
   }
